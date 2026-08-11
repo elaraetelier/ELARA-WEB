@@ -550,26 +550,33 @@ var CRAFT = [
    FILL THESE IN — Firebase console › Project settings › Your apps
    ───────────────────────────────────────────────────────────── */
 var FIREBASE_CONFIG = {
-  apiKey:            "PASTE_API_KEY",
-  authDomain:        "PASTE_PROJECT.firebaseapp.com",
-  projectId:         "PASTE_PROJECT",
-  storageBucket:     "PASTE_PROJECT.firebasestorage.app",
-  messagingSenderId: "PASTE_SENDER_ID",
-  appId:             "PASTE_APP_ID"
+  apiKey:            "AIzaSyAQwl1Gg7Nm-S2QY1cIXa8nsSh1R1FyAng",
+  authDomain:        "elara-etelier.firebaseapp.com",
+  projectId:         "elara-etelier",
+  storageBucket:     "elara-etelier.firebasestorage.app",
+  messagingSenderId: "812886232047",
+  appId:             "1:812886232047:web:d1c10bde84aad25cc8041a"
 };
 
 /* the Gmail that may edit the site */
-var MASTER_EMAIL = "PASTE_MASTER_GMAIL";
+var MASTER_EMAIL = "elaraetelier@gmail.com";
 /* ───────────────────────────────────────────────────────────── */
 
-var FB_READY = FIREBASE_CONFIG.apiKey.indexOf('PASTE') === -1;
-var auth = null, db = null;
-if(FB_READY){
-  firebase.initializeApp(FIREBASE_CONFIG);
-  auth = firebase.auth(); db = firebase.firestore();
+var BUILD = '2026-08-11';
+var FB_READY = false, FB_WHY = '', auth = null, db = null;
+if(typeof firebase === 'undefined'){
+  FB_WHY = 'The Firebase library did not load — check the connection';
+} else if(FIREBASE_CONFIG.apiKey.indexOf('PASTE') !== -1){
+  FB_WHY = 'This copy of index.html has no Firebase keys — upload the current one';
 } else {
-  console.warn('Elara: Firebase is not configured yet — the site is running on the built-in sample catalogue. Fill in FIREBASE_CONFIG and MASTER_EMAIL near the top of index.html.');
+  try {
+    firebase.initializeApp(FIREBASE_CONFIG);
+    auth = firebase.auth(); db = firebase.firestore();
+    FB_READY = true;
+  } catch(e){ FB_WHY = 'Firebase would not start: ' + (e.message || e.code); }
 }
+console.log('Elara build ' + BUILD + ' · project ' + FIREBASE_CONFIG.projectId +
+            ' · firebase ' + (FB_READY ? 'connected' : 'OFF — ' + FB_WHY));
 
 var C_CAT = 'catalog', C_COL = 'collections', C_SITE = 'site';
 var SEED = { config:JSON.parse(JSON.stringify(CONFIG)),
@@ -591,6 +598,7 @@ function applySettings(d){
 function repaint(){
   if(window.__render) window.__render();
   if(window.__syncWA) window.__syncWA();
+  if(window.__paintFooter) window.__paintFooter();
 }
 function loadSite(){
   if(!FB_READY) return;
@@ -708,16 +716,10 @@ function viewHome(){
   '<section class="band band-parchment"><div class="wrap">'+
     '<div class="head rev"><h2>Collections</h2><div class="rule"></div>'+
     '<a class="btn-quiet" href="#/collections" style="white-space:nowrap">All collections<i></i></a></div>'+
-    '<div class="cols">'+
-      '<a class="card c-7 rev" href="#/collection/bridal"><div class="card-media">'+plate(COLLECTIONS[0].cover,'r32','p-wine',1600)+'<div class="frame"></div></div>'+
-      '<div class="card-meta"><div class="eyebrow">'+esc(COLLECTIONS[0].name)+'</div><h3>'+esc(COLLECTIONS[0].tagline)+'</h3><p>Made to order · 10–14 weeks</p></div></a>'+
-      '<a class="card c-5 rev" href="#/collection/contemporary"><div class="card-media">'+plate(COLLECTIONS[1].cover,'r45','p-ivory',900)+'<div class="frame"></div></div>'+
-      '<div class="card-meta"><div class="eyebrow">'+esc(COLLECTIONS[1].name)+'</div><h3>'+esc(COLLECTIONS[1].tagline)+'</h3><p>Ready to wear and made to measure</p></div></a>'+
-      '<a class="card c-6 rev" href="#/collection/festive"><div class="card-media">'+plate(COLLECTIONS[2].cover,'r32','p-champagne',1200)+'<div class="frame"></div></div>'+
-      '<div class="card-meta"><div class="eyebrow">'+esc(COLLECTIONS[2].name)+'</div><h3>'+esc(COLLECTIONS[2].tagline)+'</h3><p>Shorter lead times</p></div></a>'+
-      '<a class="card c-6 rev" href="#/collection/signature"><div class="card-media">'+plate(COLLECTIONS[3].cover,'r32','p-ivory',1200)+'<div class="frame"></div></div>'+
-      '<div class="card-meta"><div class="eyebrow">'+esc(COLLECTIONS[3].name)+'</div><h3>'+esc(COLLECTIONS[3].tagline)+'</h3><p>Remade only on request</p></div></a>'+
-    '</div>'+
+    collectionGrid(COLLECTIONS.slice(0, 6))+
+    (COLLECTIONS.length > 6
+      ? '<p class="note rev" style="margin-top:var(--s5)">'+(COLLECTIONS.length - 6)+' more inside. '+
+        '<a class="btn-quiet" href="#/collections" style="margin-left:var(--s3)">See them all<i></i></a></p>' : '')+
   '</div></section>'+
 
   '<section class="band"><div class="wrap">'+
@@ -797,6 +799,36 @@ function stitchBand(){
     '</div>'+
   '</section>';
 }
+function countIn(slug){ return PRODUCTS.filter(function(p){ return p.collection === slug; }).length; }
+/* rows that always add up to twelve, whatever the number of collections */
+function layoutRows(n){
+  var shapes = [[7,5],[6,6],[4,4,4],[5,7]], rows = [], i = 0, s = 0;
+  while(i < n){
+    var left = n - i, shape;
+    if(left === 1) shape = [12];
+    else if(left === 2) shape = (s % 2) ? [5,7] : [7,5];
+    else if(left === 3) shape = [4,4,4];
+    else { shape = shapes[s % shapes.length]; if(shape.length > left) shape = [7,5]; }
+    rows.push(shape); i += shape.length; s++;
+  }
+  return rows;
+}
+function collectionCard(c, span){
+  var n = countIn(c.slug);
+  return '<a class="card rev" style="grid-column:span '+span+'" href="#/collection/'+c.slug+'">'+
+    '<div class="card-media">'+plate(c.cover, span >= 6 ? 'r32' : 'r45', 'p-ivory', span >= 6 ? 1500 : 900)+
+    '<div class="frame"></div></div>'+
+    '<div class="card-meta"><div class="eyebrow">'+esc(c.name)+'</div>'+
+    '<h3>'+esc(c.tagline || c.name)+'</h3>'+
+    '<p>'+(n ? n + ' piece' + (n===1?'':'s') : 'Coming soon')+'</p></div></a>';
+}
+function collectionGrid(list){
+  var rows = layoutRows(list.length), out = '', i = 0;
+  rows.forEach(function(shape){
+    shape.forEach(function(span){ if(list[i]) out += collectionCard(list[i++], span); });
+  });
+  return '<div class="cols">' + out + '</div>';
+}
 function say(k){
   var parts = String(T(k)).split('|');
   return esc(parts[0]) + (parts[1] ? '<br><em>' + esc(parts[1]) + '</em>' : '');
@@ -813,20 +845,15 @@ function sigSVG(){
 function viewCollections(){
   return '<div class="pagetop"><div class="wrap">'+
       '<div class="crumb">Elara Etelier — Collections</div>'+
-      '<h1>Four collections, one hand</h1>'+
+      '<h1>'+esc(COLLECTIONS.length > 1 ? COLLECTIONS.length + ' collections, one hand' : 'One hand')+'</h1>'+
       '<p>Every piece is made to order. Ready-to-wear sizes exist where the cut allows it; everything else is cut to measurements.</p>'+
     '</div></div>'+
-    '<section class="band"><div class="wrap"><div class="cols">'+
-      COLLECTIONS.map(function(c,i){
-        var n = PRODUCTS.filter(function(p){ return p.collection===c.slug; }).length;
-        return '<a class="card '+(i%3===0?'c-7':'c-5')+' rev" href="#/collection/'+c.slug+'">'+
-          '<div class="card-media">'+plate(c.cover, i%3===0?'r32':'r45', 'p-ivory',1400)+'<div class="frame"></div></div>'+
-          '<div class="card-meta"><div class="eyebrow">'+esc(c.name)+'</div><h3>'+esc(c.tagline)+'</h3>'+
-          '<p>'+n+' pieces</p></div></a>';
-      }).join('')+
-      '<div class="c-12 rev" style="grid-column:1/-1"><div class="textile" style="margin:var(--s5) 0"></div>'+
+    '<section class="band"><div class="wrap">'+
+      (COLLECTIONS.length ? collectionGrid(COLLECTIONS)
+        : '<p class="note">No collections yet.</p>')+
+      '<div class="rev" style="margin-top:var(--s6)"><div class="textile" style="margin:var(--s5) 0"></div>'+
       '<p class="note" style="max-width:var(--measure)">Bespoke sits outside the collections. If nothing here is right, the etelier will make what is. <a class="btn-quiet" href="#/bespoke" style="margin-left:var(--s3)">Bespoke by H.K.<i></i></a></p></div>'+
-    '</div></div></section>';
+    '</div></section>';
 }
 
 function viewCollection(slug){
@@ -1007,9 +1034,13 @@ var app = document.getElementById('app'), nav = document.getElementById('nav'), 
 var io = null, heroBg = null, fabricStop = null;
 
 /* footer links + phone from config */
-document.getElementById('footCols').innerHTML = COLLECTIONS.map(function(c){
-  return '<li><a href="#/collection/'+c.slug+'">'+V.esc(c.name)+'</a></li>'; }).join('') +
-  '<li><a href="#/bespoke">Bespoke</a></li>';
+function paintFooter(){
+  document.getElementById('footCols').innerHTML = COLLECTIONS.slice(0,6).map(function(c){
+    return '<li><a href="#/collection/'+c.slug+'">'+V.esc(c.name)+'</a></li>'; }).join('') +
+    '<li><a href="#/bespoke">Bespoke</a></li>';
+}
+window.__paintFooter = paintFooter;
+paintFooter();
 document.getElementById('footPhone').textContent = CONFIG.whatsappLabel;
 var fb = document.getElementById('footBlurb'); if(fb) fb.textContent = T('footerBlurb');
 wa.href = V.waLink('Hello H.K., I would like to enquire about Elara Etelier.');
@@ -1328,6 +1359,19 @@ setTimeout(function(){
   background:none; border-left:0; border-right:0; border-top:0; text-align:left; cursor:pointer; width:100%;
   font-family:var(--f-utility); font-size:.86rem; color:var(--ink)}
 .orow.on{background:var(--parchment)}
+.orow-wrap{display:flex; align-items:stretch; border-bottom:1px solid var(--sand)}
+.orow-wrap .orow{border-bottom:0; flex:1}
+.oarrows{display:flex; flex-direction:column; justify-content:center; gap:2px; padding-right:4px}
+.oarrows button{background:none; border:0; cursor:pointer; color:var(--ink-mute); font-size:9px;
+  line-height:1; padding:3px 6px}
+.oarrows button:hover{color:var(--wine)}
+.oflag{font-family:var(--f-utility); font-style:normal; font-size:.54rem; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--gold-ink); align-self:center; padding-left:6px}
+.ofilter{display:grid; gap:6px; margin-bottom:var(--s3); font-family:var(--f-utility); font-size:.62rem;
+  letter-spacing:.18em; text-transform:uppercase; color:var(--ink-mute)}
+.ofilter select{font-family:var(--f-utility); font-size:.9rem; color:var(--ink); background:transparent;
+  border:0; border-bottom:1px solid var(--wine-line); padding:9px 2px; border-radius:0}
+.ofilter select:focus{outline:none; border-bottom-color:var(--wine)}
 .orow i{width:34px; height:44px; flex:0 0 34px; background:var(--sand); background-size:cover; background-position:center}
 .orow b{font-weight:400} .orow small{display:block; color:var(--ink-mute); font-size:.72rem}
 .oform{display:grid; grid-template-columns:1fr 1fr; gap:var(--s4) var(--s5)}
@@ -1469,7 +1513,7 @@ function toast(t){
 
 /* ── LOGIN ── */
 function ownerLogin(){
-  if(!FB_READY){ toast('Firebase is not set up yet — see DEPLOY.md'); return; }
+  if(!FB_READY){ toast(FB_WHY); return; }
   var p = new firebase.auth.GoogleAuthProvider(); p.setCustomParameters({prompt:'select_account'});
   auth.signInWithPopup(p).then(function(r){ if(r && r.user) enableOwner(r.user); })
   .catch(function(e){ if(e.code === 'auth/popup-blocked') auth.signInWithRedirect(p); else toast('Login failed: ' + e.code); });
@@ -1577,28 +1621,81 @@ function weigh(imgs){
 }
 
 /* ── PIECES ── */
+var filterCol = 'all';
+function colOf(p){ return (COLLECTIONS.filter(function(c){ return c.slug === p.collection; })[0] || null); }
+function inFilter(p){
+  if(filterCol === 'all') return true;
+  if(filterCol === '__none') return !colOf(p);
+  return p.collection === filterCol;
+}
+function swapSort(coll, a, b, after){
+  if(!a || !b || !a.docId || !b.docId){ toast('Save both pieces first'); return; }
+  var sa = a.sort || 0, sb = b.sort || 0;
+  if(sa === sb){ sb = sa + 1; }
+  var batch = db.batch();
+  batch.update(db.collection(coll).doc(a.docId), {sort: sb});
+  batch.update(db.collection(coll).doc(b.docId), {sort: sa});
+  batch.commit().then(function(){ loadSite(); setTimeout(after, 650); }).catch(fail);
+}
 function drawPieces(){
   var host = document.getElementById('paneP'); if(!host) return;
   if(selP >= PRODUCTS.length) selP = 0;
   var p = PRODUCTS[selP] || null;
-  var list = PRODUCTS.map(function(x,i){
-    return '<button class="orow '+(i===selP?'on':'')+'" data-i="'+i+'">'+
-      '<i style="background-image:url('+(window.__views.IMG(x.thumbnail,120)||'')+')"></i>'+
-      '<span><b>'+(x.name||'Untitled')+'</b><small>'+(x.category||'')+' · '+(x.id||'')+'</small></span></button>';
-  }).join('');
-  host.innerHTML = '<div class="olist"><div><div class="orows">'+list+'</div>'+
-    '<button class="btn btn-secondary" id="pAdd" style="margin-top:var(--s4);width:100%;justify-content:center">Add a piece</button></div>'+
-    '<div>'+(p ? pieceForm(p) : '<p class="ohint">No pieces yet — add the first one.</p>')+'</div></div>';
-  host.querySelectorAll('.orow').forEach(function(b){ b.onclick = function(){ selP = +b.dataset.i; pendingImgs = null; drawPieces(); }; });
+  var opts = '<option value="all">All pieces ('+PRODUCTS.length+')</option>' +
+    COLLECTIONS.map(function(c){
+      return '<option value="'+c.slug+'"'+(filterCol===c.slug?' selected':'')+'>'+c.name+' ('+countInC(c.slug)+')</option>';
+    }).join('') +
+    '<option value="__none"'+(filterCol==='__none'?' selected':'')+'>Not in a collection ('+PRODUCTS.filter(function(x){ return !colOf(x); }).length+')</option>';
+
+  var rows = '';
+  PRODUCTS.forEach(function(x,i){
+    if(!inFilter(x)) return;
+    var c = colOf(x);
+    rows += '<div class="orow-wrap">'+
+      '<button class="orow '+(i===selP?'on':'')+'" data-i="'+i+'">'+
+        '<i style="background-image:url('+(window.__views.IMG(x.thumbnail,120)||'')+')"></i>'+
+        '<span><b>'+(x.name||'Untitled')+'</b><small>'+(c ? c.name : '⚠ no collection')+' · '+(x.category||'')+'</small></span>'+
+        (x.featured ? '<em class="oflag">Featured</em>' : '')+
+      '</button>'+
+      '<span class="oarrows"><button data-up="'+i+'" title="Move up">▲</button>'+
+      '<button data-down="'+i+'" title="Move down">▼</button></span></div>';
+  });
+  if(!rows) rows = '<p class="ohint" style="padding:var(--s4) 0">Nothing in this collection yet.</p>';
+
+  host.innerHTML = '<div class="olist"><div>'+
+      '<label class="ofilter">Show<select id="pFilter">'+opts+'</select></label>'+
+      '<div class="orows">'+rows+'</div>'+
+      '<button class="btn btn-secondary" id="pAdd" style="margin-top:var(--s4);width:100%;justify-content:center">Add a piece</button>'+
+    '</div><div>'+(p ? pieceForm(p) : '<p class="ohint">No pieces yet — add the first one.</p>')+'</div></div>';
+
+  document.getElementById('pFilter').onchange = function(){ filterCol = this.value; drawPieces(); };
+  host.querySelectorAll('.orow').forEach(function(b2){
+    b2.onclick = function(){ selP = +b2.dataset.i; pendingImgs = null; drawPieces(); };
+  });
+  host.querySelectorAll('[data-up]').forEach(function(b3){
+    b3.onclick = function(){
+      var i = +b3.dataset.up; if(i <= 0) return;
+      selP = i-1; swapSort(C_CAT, PRODUCTS[i], PRODUCTS[i-1], drawPieces);
+    };
+  });
+  host.querySelectorAll('[data-down]').forEach(function(b4){
+    b4.onclick = function(){
+      var i = +b4.dataset.down; if(i >= PRODUCTS.length-1) return;
+      selP = i+1; swapSort(C_CAT, PRODUCTS[i], PRODUCTS[i+1], drawPieces);
+    };
+  });
   document.getElementById('pAdd').onclick = function(){
     PRODUCTS.unshift({ id:'EE-'+Date.now().toString(36).toUpperCase().slice(-4), slug:'new-piece-'+Date.now().toString(36),
-      name:'New piece', collection:(COLLECTIONS[0]||{}).slug||'bridal', category:'Lehenga', price:null,
-      featured:false, newArrival:true, thumbnail:'', images:[], description:'', fabric:'', craftsmanship:'',
-      silhouette:'', sizes:['Made to measure'], colours:[], customisation:true, lead:'', _new:true });
+      name:'New piece', collection:(filterCol !== 'all' && filterCol !== '__none' ? filterCol : (COLLECTIONS[0]||{}).slug||''),
+      category:'', price:null, featured:false, newArrival:true, thumbnail:'', images:[], description:'',
+      fabric:'', craftsmanship:'', silhouette:'', sizes:['Made to measure'], colours:[],
+      customisation:true, lead:'', _new:true });
     selP = 0; pendingImgs = null; drawPieces(); toast('New piece — fill it in and save');
   };
   if(p) bindPieceForm(p);
 }
+function countInC(slug){ return PRODUCTS.filter(function(x){ return x.collection === slug; }).length; }
+
 function pieceForm(p){
   var imgs = pendingImgs || (p.images && p.images.length ? p.images : (p.thumbnail ? [p.thumbnail] : []));
   var opts = COLLECTIONS.map(function(c){
@@ -1695,44 +1792,86 @@ function drawCols(){
   var host = document.getElementById('paneC'); if(!host) return;
   if(selC >= COLLECTIONS.length) selC = 0;
   var c = COLLECTIONS[selC];
-  var list = COLLECTIONS.map(function(x,i){
-    return '<button class="orow '+(i===selC?'on':'')+'" data-i="'+i+'">'+
-      '<i style="background-image:url('+(window.__views.IMG(x.cover,120)||'')+')"></i>'+
-      '<span><b>'+x.name+'</b><small>/'+x.slug+'</small></span></button>'; }).join('');
-  host.innerHTML = '<div class="olist"><div><div class="orows">'+list+'</div>'+
-    '<button class="btn btn-secondary" id="cAdd" style="margin-top:var(--s4);width:100%;justify-content:center">Add a collection</button></div><div>'+
-    (c ? '<div class="oform">'+ field('Name','c-name',c.name)+ field('Slug','c-slug',c.slug)+
-      field('Tagline','c-tag',c.tagline,true)+ field('Blurb','c-blurb',c.blurb,true,'textarea')+
+  var rows = COLLECTIONS.map(function(x,i){
+    var n = countInC(x.slug);
+    return '<div class="orow-wrap">'+
+      '<button class="orow '+(i===selC?'on':'')+'" data-i="'+i+'">'+
+        '<i style="background-image:url('+(window.__views.IMG(x.cover,120)||'')+')"></i>'+
+        '<span><b>'+(x.name||'Untitled')+'</b><small>'+n+' piece'+(n===1?'':'s')+' · /'+x.slug+'</small></span>'+
+      '</button>'+
+      '<span class="oarrows"><button data-up="'+i+'" title="Move up">▲</button>'+
+      '<button data-down="'+i+'" title="Move down">▼</button></span></div>';
+  }).join('');
+  var orphans = PRODUCTS.filter(function(x){ return !COLLECTIONS.some(function(y){ return y.slug === x.collection; }); });
+
+  host.innerHTML = '<div class="olist"><div>'+
+      '<div class="orows">'+(rows || '<p class="ohint" style="padding:var(--s4) 0">None yet.</p>')+'</div>'+
+      '<button class="btn btn-secondary" id="cAdd" style="margin-top:var(--s4);width:100%;justify-content:center">Add a collection</button>'+
+      (orphans.length ? '<p class="ohint" style="margin-top:var(--s4)">⚠ '+orphans.length+' piece'+(orphans.length===1?'':'s')+
+        ' with no collection — they will not appear anywhere on the site. Fix under Pieces.</p>' : '')+
+    '</div><div>'+
+    (c ? '<div class="oform">'+
+      field('Name','c-name',c.name)+ field('Slug (web address)','c-slug',c.slug)+
+      field('Tagline — shown on the card','c-tag',c.tagline,true)+
+      field('Blurb — shown at the top of the collection page','c-blurb',c.blurb,true,'textarea')+
       '<div class="wide"><div class="label" style="margin-bottom:var(--s3)">Cover photograph</div>'+
         (c.cover ? '<div class="oimgs"><div class="oimg"><img src="'+window.__views.IMG(c.cover,400)+'" alt=""></div></div>' : '')+
         '<input type="file" id="c-photo" accept="image/*" style="margin-top:var(--s3)">'+
-        '<span class="ohint" id="c-photo-msg">Or paste a URL below.</span></div>'+
-      field('Cover — URL or Unsplash id','c-cover',c.cover,true)+
+        '<span class="ohint" id="c-photo-msg">Or paste a link below.</span></div>'+
+      field('Cover — link or Unsplash id','c-cover',c.cover,true)+
+      '<p class="ohint wide">'+countInC(c.slug)+' piece'+(countInC(c.slug)===1?'':'s')+' in this collection. '+
+        'Order on the site follows the order in this list.</p>'+
       '<div class="osave wide"><button class="btn btn-primary" id="cSave">Save collection</button>'+
-      '<button class="btn btn-secondary" id="cDel">Delete</button></div></div>' : '')+'</div></div>';
-  host.querySelectorAll('.orow').forEach(function(b){ b.onclick = function(){ selC = +b.dataset.i; drawCols(); }; });
+      '<button class="btn btn-secondary" id="cDel">Delete</button></div></div>'
+      : '<p class="ohint">Add a collection to begin.</p>')+'</div></div>';
+
+  host.querySelectorAll('.orow').forEach(function(b2){ b2.onclick = function(){ selC = +b2.dataset.i; drawCols(); }; });
+  host.querySelectorAll('[data-up]').forEach(function(b3){
+    b3.onclick = function(){ var i = +b3.dataset.up; if(i <= 0) return;
+      selC = i-1; swapSort(C_COL, COLLECTIONS[i], COLLECTIONS[i-1], drawCols); };
+  });
+  host.querySelectorAll('[data-down]').forEach(function(b4){
+    b4.onclick = function(){ var i = +b4.dataset.down; if(i >= COLLECTIONS.length-1) return;
+      selC = i+1; swapSort(C_COL, COLLECTIONS[i], COLLECTIONS[i+1], drawCols); };
+  });
   document.getElementById('cAdd').onclick = function(){
-    db.collection(C_COL).add({slug:'new-collection-'+Date.now().toString(36), name:'New collection',
-      tagline:'', blurb:'', cover:'', sort:Date.now()})
-      .then(function(){ toast('Collection added'); loadSite(); setTimeout(drawCols, 700); }).catch(fail);
+    var maxSort = COLLECTIONS.reduce(function(m,x){ return Math.max(m, x.sort||0); }, 0);
+    db.collection(C_COL).add({slug:'collection-'+Date.now().toString(36), name:'New collection',
+      tagline:'', blurb:'', cover:'', sort:maxSort+1})
+      .then(function(){ toast('Collection added'); loadSite(); setTimeout(function(){ selC = COLLECTIONS.length-1; drawCols(); }, 700); })
+      .catch(fail);
   };
   if(!c) return;
   var cp = document.getElementById('c-photo');
   if(cp) cp.onchange = function(){
     var f = cp.files && cp.files[0]; if(!f) return;
+    document.getElementById('c-photo-msg').textContent = 'Preparing…';
     shrink(f, 1200, 0.72).then(function(d){
       document.getElementById('c-cover').value = d;
       document.getElementById('c-photo-msg').textContent = 'Ready — save the collection.';
     });
   };
   document.getElementById('cSave').onclick = function(){
+    var oldSlug = c.slug;
     var out = { slug: slugify(v('c-slug') || v('c-name')), name: v('c-name'), tagline: v('c-tag'),
-                blurb: v('c-blurb'), cover: v('c-cover'), sort: c.sort || Date.now() };
+                blurb: v('c-blurb'), cover: v('c-cover'), sort: c.sort == null ? Date.now() : c.sort };
+    if(!out.name){ toast('Give the collection a name'); return; }
+    var moved = PRODUCTS.filter(function(x){ return x.collection === oldSlug; });
     var op = c.docId ? db.collection(C_COL).doc(c.docId).set(out) : db.collection(C_COL).add(out);
-    op.then(function(){ toast('Saved — ' + out.name); loadSite(); setTimeout(drawCols, 700); }).catch(fail);
+    op.then(function(){
+      /* if the address changed, carry its pieces across rather than orphaning them */
+      if(out.slug !== oldSlug && moved.length){
+        var batch = db.batch();
+        moved.forEach(function(x){ if(x.docId) batch.update(db.collection(C_CAT).doc(x.docId), {collection: out.slug}); });
+        return batch.commit().then(function(){ toast('Saved — ' + moved.length + ' piece' + (moved.length===1?'':'s') + ' moved across'); });
+      }
+      toast('Saved — ' + out.name);
+    }).then(function(){ loadSite(); setTimeout(drawCols, 700); }).catch(fail);
   };
   document.getElementById('cDel').onclick = function(){
-    if(!confirm('Delete the "' + c.name + '" collection?')) return;
+    var n = countInC(c.slug);
+    if(n && !confirm(n + ' piece' + (n===1?'':'s') + ' sit in "' + c.name + '". Deleting the collection leaves them hidden until you move them. Continue?')) return;
+    if(!n && !confirm('Delete the "' + c.name + '" collection?')) return;
     if(!c.docId){ COLLECTIONS.splice(selC,1); selC = 0; drawCols(); return; }
     db.collection(C_COL).doc(c.docId).delete().then(function(){
       toast('Deleted'); selC = 0; loadSite(); setTimeout(drawCols, 700); }).catch(fail);
