@@ -354,7 +354,7 @@ footer{background:var(--parchment); padding-block:var(--s7) var(--s5)}
       </div>
     </div>
     <div class="foot-base">
-      <div class="label">© 2026 Elara Etelier by H.K. · New Delhi</div>
+      <div class="label">© <span class="yk">2026</span> Elara Etelier by H.K. · New Delhi</div>
       <div class="label">Appointments only · <span id="footPhone"></span></div>
     </div>
   </div>
@@ -1423,6 +1423,7 @@ setTimeout(function(){
   font-family:var(--f-utility); font-size:.64rem; letter-spacing:.14em; text-transform:uppercase; padding:9px 16px}
 .abar .ab.ghost{background:transparent; color:var(--on-wine); border-color:rgba(245,242,234,.45)}
 body.adminmode .wa{bottom:76px}
+.yk{cursor:inherit; -webkit-user-select:none; user-select:none; -webkit-tap-highlight-color:transparent}
 .oimgs{display:flex; gap:10px; flex-wrap:wrap}
 .oimg{position:relative; width:88px; height:110px; border:1px solid var(--sand); overflow:hidden}
 .oimg img{width:100%; height:100%; object-fit:cover}
@@ -1951,9 +1952,17 @@ function saveSettings(msg){
 }
 
 /* ── ways in ── */
+var ykTaps = 0, ykAt = 0;
 document.addEventListener('click', function(e){
   if(e.target.closest('#abarEdit')){ e.preventDefault(); openPanel(); }
   if(e.target.closest('#abarOut')){ e.preventDefault(); ownerLogout(); }
+  /* the year in the footer is the way in — three quick taps, nothing on screen says so */
+  if(e.target.closest('.yk')){
+    var now = Date.now();
+    ykTaps = (now - ykAt < 1200) ? ykTaps + 1 : 1;
+    ykAt = now;
+    if(ykTaps >= 3){ ykTaps = 0; isOwner ? openPanel() : ownerLogin(); }
+  }
 });
 document.addEventListener('keydown', function(e){
   /* e.code is the physical key, so it survives layouts where Alt+Shift+O types Ø */
