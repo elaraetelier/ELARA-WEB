@@ -43,7 +43,7 @@
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 body{margin:0; background:var(--ivory); color:var(--ink); font-family:var(--f-editorial);
-  font-size:var(--t-body); line-height:1.75; -webkit-font-smoothing:antialiased; overflow-x:hidden}
+  font-size:var(--t-body); line-height:1.75; -webkit-font-smoothing:antialiased; overflow-x:clip}
 body::before{content:""; position:fixed; inset:0; background-image:var(--noise); opacity:.22;
   mix-blend-mode:multiply; pointer-events:none; z-index:40}
 img{max-width:100%; display:block}
@@ -223,8 +223,8 @@ footer{background:var(--parchment); padding-block:var(--s7) var(--s5)}
 .story-media .mat{position:absolute; inset:-14px; border:1px solid var(--gold-line); pointer-events:none}
 @media(max-width:900px){.story{grid-template-columns:1fr; gap:var(--s6)}}
 .cols{display:grid; grid-template-columns:repeat(12,1fr); gap:var(--s5)}
-.c-7{grid-column:span 7}.c-5{grid-column:span 5}.c-6{grid-column:span 6}.c-4{grid-column:span 4}.c-3{grid-column:span 3}
-@media(max-width:900px){.cols{grid-template-columns:1fr}.c-7,.c-5,.c-6,.c-4,.c-3{grid-column:span 1}}
+.c-12{grid-column:span 12}.c-7{grid-column:span 7}.c-5{grid-column:span 5}.c-6{grid-column:span 6}.c-4{grid-column:span 4}.c-3{grid-column:span 3}
+@media(max-width:900px){.cols{grid-template-columns:1fr}.c-12,.c-7,.c-5,.c-6,.c-4,.c-3{grid-column:span 1}}
 .craft-steps{display:grid; grid-template-columns:repeat(5,1fr); gap:var(--s4)}
 .step .n{font-family:var(--f-utility); font-size:var(--t-label); letter-spacing:var(--tr-label); color:var(--champagne); margin-top:var(--s4); display:block}
 .step h4{font-family:var(--f-display); font-weight:400; font-size:1.15rem; margin:var(--s2) 0}
@@ -354,7 +354,7 @@ footer{background:var(--parchment); padding-block:var(--s7) var(--s5)}
       </div>
     </div>
     <div class="foot-base">
-      <div class="label">© 2026 Elara Etelier by H.K. · <a href="#" class="owner-login">Owner login</a></div>
+      <div class="label">© 2026 Elara Etelier by H.K. · New Delhi</div>
       <div class="label">Appointments only · <span id="footPhone"></span></div>
     </div>
   </div>
@@ -572,6 +572,8 @@ if(typeof firebase === 'undefined'){
   try {
     firebase.initializeApp(FIREBASE_CONFIG);
     auth = firebase.auth(); db = firebase.firestore();
+    /* the master stays signed in, so owner mode is simply there on arrival */
+    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(function(){});
     FB_READY = true;
   } catch(e){ FB_WHY = 'Firebase would not start: ' + (e.message || e.code); }
 }
@@ -815,7 +817,7 @@ function layoutRows(n){
 }
 function collectionCard(c, span){
   var n = countIn(c.slug);
-  return '<a class="card rev" style="grid-column:span '+span+'" href="#/collection/'+c.slug+'">'+
+  return '<a class="card rev c-'+span+'" href="#/collection/'+c.slug+'">'+
     '<div class="card-media">'+plate(c.cover, span >= 6 ? 'r32' : 'r45', 'p-ivory', span >= 6 ? 1500 : 900)+
     '<div class="frame"></div></div>'+
     '<div class="card-meta"><div class="eyebrow">'+esc(c.name)+'</div>'+
@@ -828,6 +830,12 @@ function collectionGrid(list){
     shape.forEach(function(span){ if(list[i]) out += collectionCard(list[i++], span); });
   });
   return '<div class="cols">' + out + '</div>';
+}
+function backLink(href, label){
+  return '<a class="backlink" href="'+href+'" data-back="1">'+
+    '<svg width="15" height="10" viewBox="0 0 15 10" fill="none" aria-hidden="true">'+
+    '<path d="M15 5H2M6 1L2 5l4 4" stroke="currentColor" stroke-width="1"/></svg>'+
+    '<span>'+esc(label)+'</span></a>';
 }
 function say(k){
   var parts = String(T(k)).split('|');
@@ -844,7 +852,7 @@ function sigSVG(){
 
 function viewCollections(){
   return '<div class="pagetop"><div class="wrap">'+
-      '<div class="crumb">Elara Etelier — Collections</div>'+
+      backLink('#/','Home')+'<div class="crumb">Elara Etelier — Collections</div>'+
       '<h1>'+esc(COLLECTIONS.length > 1 ? COLLECTIONS.length + ' collections, one hand' : 'One hand')+'</h1>'+
       '<p>Every piece is made to order. Ready-to-wear sizes exist where the cut allows it; everything else is cut to measurements.</p>'+
     '</div></div>'+
@@ -860,7 +868,7 @@ function viewCollection(slug){
   var c = colBySlug(slug); if(!c) return view404();
   var items = PRODUCTS.filter(function(p){ return p.collection===slug; });
   return '<div class="pagetop"><div class="wrap">'+
-      '<div class="crumb"><a href="#/collections">Collections</a> — '+esc(c.name)+'</div>'+
+      backLink('#/collections','All collections')+'<div class="crumb">'+esc(c.name)+'</div>'+
       '<h1>'+esc(c.tagline)+'</h1><p>'+esc(c.blurb)+'</p>'+
     '</div></div>'+
     '<section class="band"><div class="wrap">'+
@@ -887,7 +895,8 @@ function viewProduct(slug){
     ['Lead time', p.lead], ['Reference', p.id]
   ].map(function(r){ return '<div class="spec"><dt>'+r[0]+'</dt><dd>'+r[1]+'</dd></div>'; }).join('');
 
-  return '<div class="wrap pdp">'+
+  return '<div class="wrap backrow">'+backLink('#/collection/'+p.collection, colName(p.collection))+'</div>'+
+    '<div class="wrap pdp pdp-tight">'+
     '<div class="gallery">'+
       media(p)+
       (p.video ? '<video controls playsinline style="width:100%;margin-top:var(--s3)" src="'+esc(p.video)+'"></video>' : '')+
@@ -912,7 +921,7 @@ function viewProduct(slug){
 function viewBespoke(ref){
   var r = ref ? bySlug(ref) : null;
   return '<div class="pagetop"><div class="wrap">'+
-      '<div class="crumb">Bespoke by H.K.</div>'+
+      backLink('#/','Home')+'<div class="crumb">Bespoke by H.K.</div>'+
       '<h1>Some garments are chosen.<br>Others are imagined.</h1>'+
       '<p>Tell the etelier what the occasion is. Everything below goes into one message — nothing is stored on this page.</p>'+
     '</div></div>'+
@@ -956,7 +965,7 @@ function viewBespoke(ref){
 
 function viewAbout(){
   return '<div class="pagetop"><div class="wrap">'+
-      '<div class="crumb">The Designer</div><h1>Designed by Harneet Kaur</h1>'+
+      backLink('#/','Home')+'<div class="crumb">The Designer</div><h1>Designed by Harneet Kaur</h1>'+
       '<p>[One-line positioning statement — to come from Harneet.]</p></div></div>'+
     '<section class="band"><div class="wrap"><div class="story">'+
       '<figure class="story-media rev" style="margin:0">'+plate('photo-1649930055986-ca57250a7fd4','r45','p-ivory')+'<div class="mat"></div>'+
@@ -980,7 +989,7 @@ function viewAbout(){
 
 function viewEtelier(){
   return '<div class="pagetop"><div class="wrap">'+
-      '<div class="crumb">The Etelier</div><h1>Thread to garment</h1>'+
+      backLink('#/','Home')+'<div class="crumb">The Etelier</div><h1>Thread to garment</h1>'+
       '<p>Five stages, in the order they happen. Between the first and the last sit anywhere from twenty hours and five hundred.</p></div></div>'+
     '<section class="band"><div class="wrap">'+
       CRAFT.map(function(s){
@@ -996,7 +1005,7 @@ function viewEtelier(){
 }
 
 function viewEnquire(){
-  return '<div class="pagetop"><div class="wrap"><div class="crumb">Enquiries</div>'+
+  return '<div class="pagetop"><div class="wrap">'+backLink('#/','Home')+'<div class="crumb">Enquiries</div>'+
       '<h1>Speak with H.K.</h1><p>WhatsApp is how the etelier works. Messages are read by Harneet&#39;s team, usually the same day.</p></div></div>'+
     '<section class="band"><div class="wrap">'+
       '<div class="cols">'+
@@ -1017,7 +1026,7 @@ function viewEnquire(){
 }
 
 function view404(){
-  return '<div class="pagetop"><div class="wrap"><div class="crumb">Not found</div>'+
+  return '<div class="pagetop"><div class="wrap">'+backLink('#/','Home')+'<div class="crumb">Not found</div>'+
     '<h1>That page has been unpicked</h1><p>The link no longer leads anywhere. The collections are still here.</p>'+
     '<div class="btn-row" style="margin-top:var(--s5)"><a class="btn btn-primary" href="#/collections">View collections</a></div></div></div>';
 }
@@ -1252,8 +1261,14 @@ function initFabric(){
 }
 
 /* ---------- BOOT ---------- */
-window.addEventListener('hashchange', render);
+var navDepth = 0;
+window.addEventListener('hashchange', function(){ navDepth++; render(); });
 window.__render = render;
+document.addEventListener('click', function(e){
+  var b = e.target.closest('[data-back]'); if(!b) return;
+  if(navDepth > 0 && history.length > 1){ e.preventDefault(); navDepth--; history.back(); }
+  /* otherwise the href takes over, so a link opened cold still goes somewhere sensible */
+});
 render();
 var loader = document.getElementById('loader');
 setTimeout(function(){
@@ -1408,7 +1423,6 @@ setTimeout(function(){
   font-family:var(--f-utility); font-size:.64rem; letter-spacing:.14em; text-transform:uppercase; padding:9px 16px}
 .abar .ab.ghost{background:transparent; color:var(--on-wine); border-color:rgba(245,242,234,.45)}
 body.adminmode .wa{bottom:76px}
-.owner-login{border-bottom:1px dotted var(--wine-line)}
 .oimgs{display:flex; gap:10px; flex-wrap:wrap}
 .oimg{position:relative; width:88px; height:110px; border:1px solid var(--sand); overflow:hidden}
 .oimg img{width:100%; height:100%; object-fit:cover}
@@ -1938,15 +1952,21 @@ function saveSettings(msg){
 
 /* ── ways in ── */
 document.addEventListener('click', function(e){
-  if(e.target.closest('.owner-login')){ e.preventDefault(); isOwner ? openPanel() : ownerLogin(); }
   if(e.target.closest('#abarEdit')){ e.preventDefault(); openPanel(); }
   if(e.target.closest('#abarOut')){ e.preventDefault(); ownerLogout(); }
 });
 document.addEventListener('keydown', function(e){
-  if(e.altKey && e.shiftKey && (e.key === 'O' || e.key === 'o')){ e.preventDefault(); isOwner ? openPanel() : ownerLogin(); }
+  /* e.code is the physical key, so it survives layouts where Alt+Shift+O types Ø */
+  if(e.altKey && e.shiftKey && (e.code === 'KeyO' || e.key === 'O' || e.key === 'o' || e.key === 'Ø' || e.key === 'ø')){
+    e.preventDefault(); isOwner ? openPanel() : ownerLogin();
+  }
   if(e.key === 'Escape' && panel && panel.classList.contains('open')) closePanel();
 });
-function hashCheck(){ if(location.hash === '#/owner'){ isOwner ? openPanel() : ownerLogin(); } }
+function hashCheck(){
+  if(location.hash !== '#/owner') return;
+  if(isOwner){ openPanel(); }
+  else { location.replace(location.pathname + location.search + '#/'); ownerLogin(); }
+}
 window.addEventListener('hashchange', hashCheck);
 hashCheck();
 
@@ -1980,7 +2000,7 @@ hashCheck();
 
 /* ---- THE STITCHED MARK ---- */
 .stitchband{position:relative; height:280vh; background:var(--parchment)}
-.stitch-sticky{position:sticky; top:0; height:100svh; overflow:hidden;
+.stitch-sticky{position:sticky; position:-webkit-sticky; top:0; height:100vh; height:100svh; overflow:hidden;
   display:grid; place-items:center; touch-action:pan-y}
 .stitch-canvas{position:absolute; inset:0; width:100%; height:100%; display:block}
 .stitch-copy{position:absolute; left:var(--gutter); top:calc(var(--s8) + 10px); display:grid}
@@ -2319,7 +2339,11 @@ function makeStitch(sec){
     if(word) word.classList.toggle('on', p > 0.955);
     sec.classList.toggle('done', p > 0.95);
   }
-  function onScroll(){ measure(); }
+  var mTick = false;
+  function onScroll(){
+    if(mTick) return; mTick = true;
+    requestAnimationFrame(function(){ measure(); mTick = false; });
+  }
   function onMove(e){
     if(!hasPointer) return;
     var r = sticky.getBoundingClientRect();
@@ -2373,3 +2397,175 @@ return { mount:mount, clear:clear };
   sync();
 })();
 </script>
+
+<style>
+/* ============================================================
+   MOBILE PASS — everything below 760px is laid out for the phone,
+   not shrunk down from the desktop.
+   ============================================================ */
+@media(max-width:760px){
+  :root{
+    --t-hero:clamp(2.5rem,11.5vw,4rem);
+    --t-display:clamp(1.85rem,7.5vw,2.6rem);
+    --t-title:clamp(1.35rem,5.6vw,1.8rem);
+    --t-lede:1.05rem;
+    --t-body:1.08rem;
+    --gutter:20px;
+  }
+  /* headings must wrap — nowrap was pushing the page sideways */
+  .head{grid-template-columns:1fr; gap:var(--s3); margin-bottom:var(--s5)}
+  .head h2{white-space:normal; line-height:1.2}
+  .head .rule{display:none}
+  .head::after{content:""; grid-column:1/-1; height:1px; background:var(--wine-line)}
+  .band-wine .head::after{background:rgba(245,242,234,.3)}
+  .head .btn-quiet{justify-self:start}
+
+  /* bands breathe less on a phone */
+  .band{padding-block:var(--s7)}
+  .pagetop{padding:calc(var(--s6) + 46px) 0 var(--s5)}
+  .pagetop h1{margin:var(--s2) 0 var(--s3)}
+  .pdp{padding-top:calc(var(--s6) + 46px); gap:var(--s5)}
+
+  /* hero */
+  .hero h1{max-width:none; letter-spacing:0}
+  .hero-in{padding-bottom:var(--s6)}
+  .hero-foot{gap:var(--s4)}
+  .hero-foot p{max-width:none}
+  .scroll-cue i{width:40px}
+
+  /* nav sits tighter, and the sheet fills properly */
+  .nav-in{padding:14px var(--gutter)}
+  .navmark{font-size:.82rem; letter-spacing:.16em}
+  .sheet{align-content:center; gap:var(--s3)}
+  .sheet a{font-size:clamp(1.7rem,9vw,2.4rem)}
+
+  /* collections and pieces: one per row, full bleed to the gutters */
+  .cols{gap:var(--s5)}
+  .card-meta h3{font-size:1.35rem}
+  .card-flip{aspect-ratio:4/5}
+  .card-flip.r32{aspect-ratio:4/5}   /* wide crops are wrong on a phone */
+  .cf-hint{opacity:1; transform:none} /* no hover, so always show the tap cue */
+
+  /* editorial two-ups stack */
+  .story,.bespoke-in,.hk{grid-template-columns:1fr; gap:var(--s5)}
+  .story-media .mat{inset:-8px}
+  .craft-steps{grid-template-columns:1fr 1fr; gap:var(--s4)}
+  .etelier-step{gap:var(--s4); margin-bottom:var(--s6)}
+
+  /* product page */
+  .thumbs{grid-template-columns:repeat(4,1fr); gap:var(--s2)}
+  .mainshot .zoombtn{opacity:1; transform:none; font-size:.55rem; padding:8px 11px}
+  .spec{grid-template-columns:1fr; gap:2px; padding:var(--s3) 0}
+  .spec dt{font-size:.6rem}
+  .pdp-info h1{margin:var(--s2) 0}
+
+  /* buttons stack full width rather than sitting in odd half rows */
+  .btn-row{gap:var(--s2)}
+  .btn-row .btn{flex:1 1 100%; justify-content:center}
+  .pdp-info .btn-row .btn,.enquire .btn-row .btn{flex:1 1 100%}
+  .btn{padding:16px 22px}
+
+  /* the construction section: shorter, and the labels out of the way */
+  .stitchband{height:230vh}
+  .stitch-copy{left:var(--gutter); top:calc(var(--s6) + 54px)}
+  .sc-line{font-size:.62rem; letter-spacing:.2em}
+  .stitch-rail{bottom:18px}
+
+  /* the floating enquiry sits above the thumb, full width */
+  .wa{left:var(--gutter); right:var(--gutter); justify-content:center; padding:0}
+  .wa .wa-icon{flex:0 0 46px; width:46px}
+  .wa.tuck .wa-label{max-width:340px; opacity:1; padding-right:22px} /* never collapse on mobile */
+  body.adminmode .wa{bottom:84px}
+
+  /* owner mode is usable one-handed */
+  .owner-bar{padding:12px var(--gutter); gap:var(--s3) var(--s4)}
+  .owner-bar .t{width:100%; font-size:.8rem}
+  .owner-body{padding:var(--s5) var(--gutter) var(--s8)}
+  .olist{gap:var(--s5)}
+  .orows{max-height:44vh; overflow:auto}
+  .osave{position:static; padding-top:var(--s4)}
+  .osave .btn{flex:1 1 100%; justify-content:center}
+  .abar{padding:10px var(--gutter)}
+  .abar .ab-t{width:100%; font-size:.62rem}
+  .abar .ab{flex:1; text-align:center}
+}
+
+@media(max-width:420px){
+  .craft-steps{grid-template-columns:1fr}
+  .thumbs{grid-template-columns:repeat(3,1fr)}
+  .cf-actions{grid-template-columns:1fr}
+  .foot-base{gap:var(--s2)}
+  .hero-eyebrow{font-size:.6rem}
+}
+
+/* stop sideways scroll WITHOUT breaking position:sticky —
+   overflow-x:hidden makes a scroll container, clip does not */
+html{overflow-x:clip}
+body{max-width:100%; overflow-x:clip}
+img,svg,canvas,video{max-width:100%}
+</style>
+
+<style>
+/* ============================================================
+   FLOATING ENQUIRY — rebuilt as one pill. The old version split it
+   into a fixed-width icon column and a stretched label, which threw
+   the alignment out at every size.
+   ============================================================ */
+.wa{
+  position:fixed; z-index:35;
+  right:clamp(16px,3vw,32px); bottom:clamp(16px,3vw,32px); left:auto;
+  display:inline-flex; align-items:center; justify-content:center; gap:9px;
+  height:46px; min-height:0; padding:0 20px; box-sizing:border-box;
+  background:var(--wine); color:var(--on-wine); border:1px solid var(--wine);
+  font-family:var(--f-utility); font-weight:500; font-size:.68rem;
+  letter-spacing:.14em; text-transform:uppercase; line-height:1; white-space:nowrap;
+  overflow:hidden; opacity:0; transform:translateY(12px); pointer-events:none;
+  transition:opacity 500ms var(--e-drape), transform 500ms var(--e-drape),
+             padding 420ms var(--e-fabric), background var(--d-ui) var(--e-drape);
+}
+.wa.show{opacity:1; transform:none; pointer-events:auto}
+.wa:hover{background:var(--oxblood)}
+.wa .wa-icon{display:inline-flex; align-items:center; justify-content:center;
+  width:auto; height:auto; flex:0 0 auto; align-self:center}
+.wa .wa-icon svg{width:15px; height:15px; display:block}
+.wa .wa-label{display:inline-block; max-width:260px; padding:0; margin:0;
+  overflow:hidden; opacity:1;
+  transition:max-width 420ms var(--e-fabric), opacity 260ms var(--e-drape), margin 420ms var(--e-fabric)}
+.wa.tuck{padding:0 15px}
+.wa.tuck .wa-label{max-width:0; opacity:0; margin-left:-9px}
+.wa::after{content:""; position:absolute; inset:4px; border:1px dashed var(--champagne);
+  opacity:0; transition:opacity var(--d-ui) var(--e-drape); pointer-events:none}
+.wa:hover::after{opacity:.45}
+body.adminmode .wa{bottom:76px}
+
+@media(max-width:760px){
+  .wa{height:44px; padding:0 18px; font-size:.64rem; left:auto; right:16px; bottom:16px}
+  .wa .wa-label{max-width:52vw}
+  .wa.tuck{padding:0 14px}
+  .wa.tuck .wa-label{max-width:0; opacity:0; margin-left:-9px}
+  body.adminmode .wa{bottom:78px}
+}
+</style>
+
+<style>
+/* ---- BACK NAVIGATION ---- */
+.backlink{display:inline-flex; align-items:center; gap:9px; color:var(--ink-mute);
+  font-family:var(--f-utility); font-size:.66rem; font-weight:400; letter-spacing:.2em;
+  text-transform:uppercase; padding:8px 0; margin-bottom:var(--s3);
+  transition:color var(--d-ui) var(--e-drape)}
+.backlink svg{transition:transform var(--d-ui) var(--e-drape)}
+.backlink:hover{color:var(--wine)}
+.backlink:hover svg{transform:translateX(-4px)}
+.backlink span{position:relative}
+.backlink span::after{content:""; position:absolute; left:0; right:100%; bottom:-3px; height:1px;
+  background-image:linear-gradient(90deg,currentColor 0 5px,transparent 5px 9px); background-size:9px 1px;
+  transition:right 360ms var(--e-drape)}
+.backlink:hover span::after{right:0}
+.backrow{padding-top:calc(var(--s8) + 10px); padding-bottom:0}
+.pdp.pdp-tight{padding-top:var(--s4)}
+@media(max-width:760px){
+  .backrow{padding-top:calc(var(--s6) + 46px)}
+  .pdp.pdp-tight{padding-top:var(--s3)}
+  .backlink{font-size:.62rem; margin-bottom:var(--s2)}
+}
+</style>
