@@ -850,7 +850,9 @@ function backLink(href, label){
     '<span>'+esc(label)+'</span></a>';
 }
 function comingBand(){
-  var soon = PRODUCTS.filter(function(p){ return p.comingSoon; });
+  var soon = PRODUCTS.filter(function(p){
+    return p.comingSoon && COLLECTIONS.some(function(c){ return c.slug === p.collection; });
+  });
   if(!soon.length) return '';
   var msg = 'Hello H.K., I would like to know when the next pieces arrive.';
   return '<section class="band band-parchment"><div class="wrap">'+
@@ -893,18 +895,50 @@ function viewCollections(){
 
 function viewCollection(slug){
   var c = colBySlug(slug); if(!c) return view404();
-  var items = PRODUCTS.filter(function(p){ return p.collection===slug; });
+  var items = PRODUCTS.filter(function(p){ return p.collection === slug; });
+  var live = items.filter(function(p){ return !p.comingSoon; });
+  var soon = items.filter(function(p){ return p.comingSoon; });
+  var ask = waLink('Hello H.K., I would like to see the ' + c.name + ' collection.');
+
+  function grid(list){
+    return '<div class="cols">' + list.map(function(p){
+      return '<div class="c-3">' + card(p) + '</div>'; }).join('') + '</div>';
+  }
+
+  var body;
+  if(!items.length){
+    /* nothing in here yet — say so properly rather than showing an empty page */
+    body = '<div class="empty rev">'+
+        '<svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0 L13.6 10.4 L24 12 L13.6 13.6 L12 24 L10.4 13.6 L0 12 L10.4 10.4 Z" fill="#A98B58"/></svg>'+
+        '<h3>On the frame</h3>'+
+        '<p class="note">The pieces for this collection are being made in the etelier. '+
+        'Ask to be told the moment the first of them is ready.</p>'+
+        '<div class="btn-row" style="justify-content:center">'+
+          '<a class="btn btn-primary" target="_blank" rel="noopener" href="'+
+            waLink('Hello H.K., please tell me when the '+c.name+' collection is ready.')+'">Tell me when it arrives</a>'+
+          '<a class="btn btn-secondary" href="#/collections">See other collections</a>'+
+        '</div>'+
+      '</div>';
+  } else {
+    body = (live.length ? grid(live) : '') +
+      (soon.length
+        ? (live.length ? '<div class="head rev" style="margin:var(--s7) 0 var(--s5)"><h2>Arriving soon</h2><div class="rule"></div></div>' : '')
+          + grid(soon)
+        : '');
+  }
+
   return '<div class="pagetop"><div class="wrap">'+
       backLink('#/collections','All collections')+'<div class="crumb">'+esc(c.name)+'</div>'+
-      '<h1>'+esc(c.tagline)+'</h1><p>'+esc(c.blurb)+'</p>'+
+      '<div class="pagetop-grid">'+
+        '<h1>'+esc(c.tagline || c.name)+'</h1>'+
+        (c.blurb ? '<div class="pagetop-blurb">'+esc(c.blurb)+'</div>' : '')+
+      '</div>'+
+      (items.length ? '<div class="label" style="margin-top:var(--s4)">'+items.length+' piece'+(items.length===1?'':'s')+'</div>' : '')+
     '</div></div>'+
-    '<section class="band"><div class="wrap">'+
-      '<div class="cols">'+ items.map(function(p,i){
-        return '<div class="'+(i%3===0?'c-6':'c-3')+'">'+card(p)+'</div>';
-      }).join('') +'</div>'+
+    '<section class="band"><div class="wrap">'+ body +
       '<div class="textile" style="margin:var(--s7) 0 var(--s5)"></div>'+
       '<div class="btn-row"><a class="btn btn-secondary" href="#/collections">All collections</a>'+
-      '<a class="btn btn-primary" target="_blank" rel="noopener" href="'+waLink('Hello H.K., I would like to see the '+c.name+' collection.')+'">Ask about this collection</a></div>'+
+      '<a class="btn btn-primary" target="_blank" rel="noopener" href="'+ask+'">Ask about this collection</a></div>'+
     '</div></section>';
 }
 
@@ -2645,4 +2679,27 @@ body.adminmode .wa{bottom:76px}
 .soonmark{display:flex; flex-direction:column; gap:4px; margin-top:var(--s2)}
 .soonmark span:last-child{font-family:var(--f-utility); font-size:.9rem; color:var(--ink)}
 .oflag.soon{color:var(--wine)}
+</style>
+
+<style>
+/* ---- COLLECTION PAGE: heading beside its blurb, not a long ribbon ---- */
+.pagetop-grid{display:grid; grid-template-columns:1.05fr .95fr; gap:var(--s5) var(--s7); align-items:start}
+.pagetop-grid h1{margin:var(--s2) 0 0}
+.pagetop-blurb{font-family:var(--f-editorial); font-size:var(--t-lede); line-height:1.7;
+  color:var(--ink-mute); max-width:52ch; padding-top:var(--s3)}
+.pagetop p{max-width:52ch}
+@media(max-width:900px){
+  .pagetop-grid{grid-template-columns:1fr; gap:var(--s4)}
+  .pagetop-blurb{padding-top:0; font-size:1.02rem; line-height:1.65}
+}
+
+/* ---- EMPTY COLLECTION ---- */
+.empty{text-align:center; max-width:46ch; margin:0 auto; padding:var(--s7) 0 var(--s6);
+  display:grid; justify-items:center; gap:var(--s3)}
+.empty h3{font-family:var(--f-display); font-weight:400; font-size:var(--t-title); margin:var(--s2) 0 0}
+.empty .btn-row{margin-top:var(--s4)}
+@media(max-width:760px){
+  .empty{padding:var(--s6) 0 var(--s5)}
+  .empty .btn-row .btn{flex:1 1 100%}
+}
 </style>
