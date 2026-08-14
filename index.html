@@ -80,6 +80,14 @@ button{font:inherit}
 .p-champagne{background:repeating-linear-gradient(84deg,#D9C9AE 0 20px,#F0E7D4 34px,#C2AC87 52px,#D9C9AE 70px)}
 .p-ivory{background:repeating-linear-gradient(96deg,#E4E1D3 0 24px,#F6F3EA 38px,#D3CFBE 56px,#E4E1D3 76px)}
 .r45{aspect-ratio:4/5} .r32{aspect-ratio:3/2} .r34{aspect-ratio:3/4} .r11{aspect-ratio:1/1} .r169{aspect-ratio:16/9}
+/* garment shots keep their own proportions — the frame adapts, the photo is never cut */
+.ph.free{aspect-ratio:auto; background:var(--parchment)}
+.ph.free img{position:relative; inset:auto; width:100%; height:auto; object-fit:contain}
+.mainshot .ph{aspect-ratio:auto; min-height:0}
+.mainshot .ph img{position:relative; inset:auto; width:100%; height:auto; object-fit:contain;
+  image-rendering:auto}
+/* cards still crop, but from the top so faces and necklines survive */
+.card-media .ph img,.story-media .ph img,.hero-bg img{object-position:50% 22%}
 
 /* buttons */
 .btn{font-family:var(--f-utility); font-weight:500; font-size:.74rem; letter-spacing:var(--tr-nav);
@@ -653,7 +661,8 @@ function waLink(msg){ return 'https://wa.me/'+CONFIG.whatsapp+'?text='+encodeURI
 
 /* product card — flips to its own details, one component for every grid */
 function card(p, ratio){
-  var badge = p.newArrival ? '<span class="tag">New</span>' : '';
+  var badge = p.comingSoon ? '<span class="tag tag-soon">Coming soon</span>'
+            : (p.newArrival ? '<span class="tag">New</span>' : '');
   var rows = [['Fabric',p.fabric],['Craft',p.craftsmanship],['Silhouette',p.silhouette],['Lead time',p.lead]]
     .filter(function(r){ return r[1]; })
     .map(function(r){ return '<div class="cf-row"><span>'+r[0]+'</span><em>'+esc(r[1])+'</em></div>'; }).join('');
@@ -661,6 +670,7 @@ function card(p, ratio){
     return '<span class="dot" style="background:'+c[1]+'" title="'+esc(c[0])+'"></span>'; }).join('');
   var d = String(p.description||'');
   if(d.length > 132){ d = d.slice(0,132).replace(/\s+\S*$/,'') + '…'; }
+  var soonMsg = 'Hello H.K., please tell me when '+p.name+' ('+p.id+') is available.';
   return '<article class="card rev">'+
     '<div class="card-flip '+(ratio||'r45')+'" tabindex="0" role="button" aria-label="Show details for '+esc(p.name)+'">'+
       '<div class="cf-inner">'+
@@ -672,18 +682,19 @@ function card(p, ratio){
           '<p class="cf-desc">'+esc(d)+'</p>'+
           '<div class="cf-specs">'+rows+'</div>'+
           (dots ? '<div class="cf-dots">'+dots+'</div>' : '')+
-          '<div class="cf-price">'+esc(money(p.price))+'</div>'+
+          '<div class="cf-price">'+(p.comingSoon ? esc(p.releaseNote || 'Arriving soon') : esc(money(p.price)))+'</div>'+
           '<div class="cf-actions">'+
             '<a class="btn btn-primary" href="#/product/'+p.slug+'">See the piece</a>'+
             '<a class="btn btn-secondary" target="_blank" rel="noopener" href="'+
-              waLink('Hello H.K., I am enquiring about '+p.name+' ('+p.id+').')+'">Enquire</a>'+
+              waLink(p.comingSoon ? soonMsg : ('Hello H.K., I am enquiring about '+p.name+' ('+p.id+').'))+'">'+
+              (p.comingSoon ? 'Tell me first' : 'Enquire')+'</a>'+
           '</div>'+
         '</div></div>'+
       '</div>'+
     '</div>'+
     '<div class="card-meta"><div class="eyebrow">'+esc(colName(p.collection))+'</div>'+
     '<h3><a href="#/product/'+p.slug+'">'+esc(p.name)+'</a></h3>'+
-    '<p>'+esc(p.category)+' · '+esc(money(p.price))+'</p></div>'+
+    '<p>'+esc(p.category)+' · '+(p.comingSoon ? esc(p.releaseNote || 'Arriving soon') : esc(money(p.price)))+'</p></div>'+
   '</article>';
 }
 
@@ -737,6 +748,7 @@ function viewHome(){
     '<a class="btn btn-light rev" href="#/etelier" style="margin-top:var(--s6)">Enter the etelier</a>'+
   '</div></section>'+
 
+  comingBand()+
   stitchBand()+
 
   '<section class="band band-wine"><div class="wrap bespoke-in">'+
@@ -837,6 +849,21 @@ function backLink(href, label){
     '<path d="M15 5H2M6 1L2 5l4 4" stroke="currentColor" stroke-width="1"/></svg>'+
     '<span>'+esc(label)+'</span></a>';
 }
+function comingBand(){
+  var soon = PRODUCTS.filter(function(p){ return p.comingSoon; });
+  if(!soon.length) return '';
+  var msg = 'Hello H.K., I would like to know when the next pieces arrive.';
+  return '<section class="band band-parchment"><div class="wrap">'+
+    '<div class="head rev"><h2>Arriving soon</h2><div class="rule"></div></div>'+
+    '<p class="note rev" style="max-width:44ch; margin:0 0 var(--s6)">'+
+      'On the frame in the etelier now. Ask to be told when a piece is ready and it is held for you first.</p>'+
+    '<div class="cols">'+ soon.slice(0,4).map(function(p){
+      return '<div class="c-3">'+card(p)+'</div>'; }).join('') +'</div>'+
+    '<div class="btn-row rev" style="margin-top:var(--s6)">'+
+      '<a class="btn btn-primary" target="_blank" rel="noopener" href="'+waLink(msg)+'">Tell me when they arrive</a>'+
+    '</div>'+
+  '</div></section>';
+}
 function say(k){
   var parts = String(T(k)).split('|');
   return esc(parts[0]) + (parts[1] ? '<br><em>' + esc(parts[1]) + '</em>' : '');
@@ -873,7 +900,7 @@ function viewCollection(slug){
     '</div></div>'+
     '<section class="band"><div class="wrap">'+
       '<div class="cols">'+ items.map(function(p,i){
-        return '<div class="'+(i%3===0?'c-6':'c-3')+'">'+card(p, i%3===0?'r32':'r45')+'</div>';
+        return '<div class="'+(i%3===0?'c-6':'c-3')+'">'+card(p)+'</div>';
       }).join('') +'</div>'+
       '<div class="textile" style="margin:var(--s7) 0 var(--s5)"></div>'+
       '<div class="btn-row"><a class="btn btn-secondary" href="#/collections">All collections</a>'+
@@ -905,10 +932,16 @@ function viewProduct(slug){
     '<div class="pdp-info">'+
       '<div class="crumb"><a href="#/collection/'+p.collection+'">'+esc(colName(p.collection))+'</a> — '+esc(p.category)+'</div>'+
       '<h1>'+esc(p.name)+'</h1>'+
-      '<div class="price">'+esc(money(p.price))+'</div>'+
+      (p.comingSoon
+        ? '<div class="soonmark"><span class="label gold-label">Arriving soon</span>'+
+          (p.releaseNote ? '<span>'+esc(p.releaseNote)+'</span>' : '')+'</div>'
+        : '<div class="price">'+esc(money(p.price))+'</div>')+
       '<p class="pdp-desc">'+esc(p.description)+'</p>'+
       '<div class="btn-row">'+
-        '<a class="btn btn-primary" target="_blank" rel="noopener" href="'+waLink(msg)+'">Enquire on WhatsApp</a>'+
+        (p.comingSoon
+          ? '<a class="btn btn-primary" target="_blank" rel="noopener" href="'+
+            waLink('Hello H.K., please tell me when '+p.name+' ('+p.id+') is ready.')+'">Tell me when it is ready</a>'
+          : '<a class="btn btn-primary" target="_blank" rel="noopener" href="'+waLink(msg)+'">Enquire on WhatsApp</a>')+
         (p.customisation ? '<a class="btn btn-secondary" href="#/bespoke?ref='+p.slug+'">Request customisation</a>' : '')+
       '</div>'+
       '<dl class="specs">'+specs+'</dl>'+
@@ -1614,6 +1647,9 @@ function drawPanel(){
 }
 
 /* ── photographs: shrunk in the browser, stored on the piece ── */
+/* Downscaling in one step aliases badly — halving repeatedly keeps the detail.
+   Canvas smoothing is set high, and the encode runs at a quality that survives
+   being displayed at full width on a laptop. */
 function shrink(file, max, q){
   return new Promise(function(res, rej){
     var rd = new FileReader(), img = new Image();
@@ -1621,10 +1657,29 @@ function shrink(file, max, q){
     rd.onerror = rej;
     img.onload = function(){
       var w = img.width, h = img.height;
-      if(w > h && w > max){ h = h*max/w; w = max; } else if(h >= w && h > max){ w = w*max/h; h = max; }
-      var c = document.createElement('canvas'); c.width = w; c.height = h;
-      c.getContext('2d').drawImage(img, 0, 0, w, h);
-      res(c.toDataURL('image/jpeg', q));
+      var scale = Math.min(1, max / Math.max(w, h));
+      var tw = Math.round(w * scale), th = Math.round(h * scale);
+      var src = img, cw = w, ch = h;
+      /* step down by halves until within 2x of the target */
+      while(cw * 0.5 > tw){
+        cw = Math.round(cw * 0.5); ch = Math.round(ch * 0.5);
+        var half = document.createElement('canvas');
+        half.width = cw; half.height = ch;
+        var hx = half.getContext('2d');
+        hx.imageSmoothingEnabled = true; hx.imageSmoothingQuality = 'high';
+        hx.drawImage(src, 0, 0, cw, ch);
+        src = half;
+      }
+      var c = document.createElement('canvas');
+      c.width = tw; c.height = th;
+      var cx = c.getContext('2d');
+      cx.imageSmoothingEnabled = true; cx.imageSmoothingQuality = 'high';
+      cx.drawImage(src, 0, 0, tw, th);
+      var out = c.toDataURL('image/jpeg', q);
+      /* if it came out heavy, step the quality down rather than the size */
+      var qq = q;
+      while(out.length > 620000 && qq > 0.55){ qq -= 0.06; out = c.toDataURL('image/jpeg', qq); }
+      res(out);
     };
     img.onerror = rej;
     rd.readAsDataURL(file);
@@ -1640,6 +1695,7 @@ var filterCol = 'all';
 function colOf(p){ return (COLLECTIONS.filter(function(c){ return c.slug === p.collection; })[0] || null); }
 function inFilter(p){
   if(filterCol === 'all') return true;
+  if(filterCol === '__soon') return !!p.comingSoon;
   if(filterCol === '__none') return !colOf(p);
   return p.collection === filterCol;
 }
@@ -1660,6 +1716,7 @@ function drawPieces(){
     COLLECTIONS.map(function(c){
       return '<option value="'+c.slug+'"'+(filterCol===c.slug?' selected':'')+'>'+c.name+' ('+countInC(c.slug)+')</option>';
     }).join('') +
+    '<option value="__soon"'+(filterCol==='__soon'?' selected':'')+'>Coming soon ('+PRODUCTS.filter(function(x){ return x.comingSoon; }).length+')</option>'+
     '<option value="__none"'+(filterCol==='__none'?' selected':'')+'>Not in a collection ('+PRODUCTS.filter(function(x){ return !colOf(x); }).length+')</option>';
 
   var rows = '';
@@ -1670,7 +1727,7 @@ function drawPieces(){
       '<button class="orow '+(i===selP?'on':'')+'" data-i="'+i+'">'+
         '<i style="background-image:url('+(window.__views.IMG(x.thumbnail,120)||'')+')"></i>'+
         '<span><b>'+(x.name||'Untitled')+'</b><small>'+(c ? c.name : '⚠ no collection')+' · '+(x.category||'')+'</small></span>'+
-        (x.featured ? '<em class="oflag">Featured</em>' : '')+
+        (x.comingSoon ? '<em class="oflag soon">Soon</em>' : (x.featured ? '<em class="oflag">Featured</em>' : ''))+
       '</button>'+
       '<span class="oarrows"><button data-up="'+i+'" title="Move up">▲</button>'+
       '<button data-down="'+i+'" title="Move down">▼</button></span></div>';
@@ -1704,7 +1761,7 @@ function drawPieces(){
       name:'New piece', collection:(filterCol !== 'all' && filterCol !== '__none' ? filterCol : (COLLECTIONS[0]||{}).slug||''),
       category:'', price:null, featured:false, newArrival:true, thumbnail:'', images:[], description:'',
       fabric:'', craftsmanship:'', silhouette:'', sizes:['Made to measure'], colours:[],
-      customisation:true, lead:'', _new:true });
+      customisation:true, lead:'', comingSoon:false, releaseNote:'', _new:true });
     selP = 0; pendingImgs = null; drawPieces(); toast('New piece — fill it in and save');
   };
   if(p) bindPieceForm(p);
@@ -1732,7 +1789,9 @@ function pieceForm(p){
     '<div class="wide"><div class="label" style="margin-bottom:var(--s3)">Photographs</div>'+
       '<div class="oimgs" id="p-strip">'+(strip || '<span class="ohint">None yet.</span>')+'</div>'+
       '<input type="file" id="p-photos" accept="image/*" multiple style="margin-top:var(--s3)">'+
-      '<span class="ohint" id="p-photos-msg">First photograph is the cover. Shrunk to 1000px before saving · '+weigh(imgs)+'</span></div>'+
+      '<span class="ohint" id="p-photos-msg">First photograph is the cover. Saved at up to 1600px · '+weigh(imgs)+'</span></div>'+
+    '<label class="check"><input type="checkbox" id="p-soon"'+(p.comingSoon?' checked':'')+'> Coming soon — not ready to sell yet</label>'+
+    field('Arriving — shown instead of the price','p-release',p.releaseNote||'',true)+
     '<label class="check"><input type="checkbox" id="p-cust"'+(p.customisation?' checked':'')+'> Customisation available</label>'+
     '<label class="check"><input type="checkbox" id="p-feat"'+(p.featured?' checked':'')+'> Featured on the homepage</label>'+
     '<label class="check"><input type="checkbox" id="p-new"'+(p.newArrival?' checked':'')+'> New arrival</label>'+
@@ -1754,7 +1813,7 @@ function bindPieceForm(p){
     var files = Array.prototype.slice.call(ph.files || []); if(!files.length) return;
     var msg = document.getElementById('p-photos-msg');
     msg.textContent = 'Preparing ' + files.length + ' photograph' + (files.length===1?'':'s') + '…';
-    Promise.all(files.map(function(f){ return shrink(f, 1000, 0.7); })).then(function(list){
+    Promise.all(files.map(function(f){ return shrink(f, 1600, 0.86); })).then(function(list){
       pendingImgs = imgs.concat(list);
       drawPieces();
       var m2 = document.getElementById('p-photos-msg');
@@ -1774,6 +1833,7 @@ function bindPieceForm(p){
         return m ? [m[1].trim() || 'Colour', m[2]] : null; }).filter(Boolean),
       images: (pendingImgs || p.images || []).slice(0, 6),
       customisation: chk('p-cust'), featured: chk('p-feat'), newArrival: chk('p-new'),
+      comingSoon: chk('p-soon'), releaseNote: v('p-release'),
       active: true, sort: p.sort || Date.now()
     };
     var pr = v('p-price').replace(/[^0-9.]/g,'');
@@ -1861,7 +1921,7 @@ function drawCols(){
   if(cp) cp.onchange = function(){
     var f = cp.files && cp.files[0]; if(!f) return;
     document.getElementById('c-photo-msg').textContent = 'Preparing…';
-    shrink(f, 1200, 0.72).then(function(d){
+    shrink(f, 1600, 0.86).then(function(d){
       document.getElementById('c-cover').value = d;
       document.getElementById('c-photo-msg').textContent = 'Ready — save the collection.';
     });
@@ -2577,4 +2637,12 @@ body.adminmode .wa{bottom:76px}
   .pdp.pdp-tight{padding-top:var(--s3)}
   .backlink{font-size:.62rem; margin-bottom:var(--s2)}
 }
+</style>
+
+<style>
+/* ---- COMING SOON ---- */
+.tag-soon{background:var(--wine); color:var(--on-wine)}
+.soonmark{display:flex; flex-direction:column; gap:4px; margin-top:var(--s2)}
+.soonmark span:last-child{font-family:var(--f-utility); font-size:.9rem; color:var(--ink)}
+.oflag.soon{color:var(--wine)}
 </style>
