@@ -1049,17 +1049,9 @@ function viewHome(){
     '</div>'+
   '</section>'+
 
+  /* the work first — collections, then the featured pieces — and only then
+     the story of the house and the woman who makes it */
   '<section class="band"><div class="wrap">'+
-    '<div class="head rev"><h2>The House</h2><div class="rule"></div></div>'+
-    '<div class="story">'+
-      '<div class="rev"><p class="story-say">'+say('houseSay')+'</p>'+
-      '<p>'+esc(T('houseBody'))+'</p>'+
-      '<a class="btn-quiet" href="#/about" style="margin-top:var(--s4)">Meet the designer<i></i></a></div>'+
-      '<figure class="story-media rev" style="margin:0">'+plate(PIC('house'),'r45','p-champagne')+'<div class="mat"></div></figure>'+
-    '</div>'+
-  '</div></section>'+
-
-  '<section class="band band-parchment"><div class="wrap">'+
     '<div class="head rev"><h2>Collections</h2><div class="rule"></div>'+
     '<a class="btn-quiet" href="#/collections" style="white-space:nowrap">All collections<i></i></a></div>'+
     collectionGrid(COLLECTIONS.slice(0, 6))+
@@ -1068,9 +1060,19 @@ function viewHome(){
         '<a class="btn-quiet" href="#/collections" style="margin-left:var(--s3)">See them all<i></i></a></p>' : '')+
   '</div></section>'+
 
-  '<section class="band"><div class="wrap">'+
+  (feat.length ? '<section class="band band-parchment"><div class="wrap">'+
     '<div class="head rev"><h2>Featured</h2><div class="rule"></div></div>'+
     '<div class="cols">'+ feat.map(function(p){ return '<div class="c-3">'+card(p)+'</div>'; }).join('') +'</div>'+
+  '</div></section>' : '')+
+
+  '<section class="band"><div class="wrap">'+
+    '<div class="head rev"><h2>The House</h2><div class="rule"></div></div>'+
+    '<div class="story">'+
+      '<div class="rev"><p class="story-say">'+say('houseSay')+'</p>'+
+      '<p>'+esc(T('houseBody'))+'</p>'+
+      '<a class="btn-quiet" href="#/about" style="margin-top:var(--s4)">Meet the designer<i></i></a></div>'+
+      '<figure class="story-media rev" style="margin:0">'+plate(PIC('house'),'r45','p-champagne')+'<div class="mat"></div></figure>'+
+    '</div>'+
   '</div></section>'+
 
   '<section class="band band-wine"><div class="wrap">'+
