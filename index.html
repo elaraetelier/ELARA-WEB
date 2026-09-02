@@ -1262,18 +1262,71 @@ function viewCollection(slug){
         : '');
   }
 
-  return '<div class="pagetop"><div class="wrap">'+
+  /* the shape of the collection, said in one line under the name */
+  var facts = [];
+  if(items.length) facts.push(items.length + ' piece' + (items.length === 1 ? '' : 's'));
+  if(soon.length && live.length) facts.push(soon.length + ' arriving');
+  var leads = items.map(function(x){ return x.lead; }).filter(Boolean);
+  if(leads.length && leads.length === items.length &&
+     leads.every(function(l){ return l === leads[0]; })) facts.push(leads[0]);
+  else if(leads.length) facts.push('made to order');
+  if(items.length && items.filter(function(x){ return x.customisation; }).length === items.length)
+    facts.push('customisable');
+  var meta = facts.length ? '<div class="colhero-meta">'+
+    facts.map(function(f){ return '<span>'+esc(f)+'</span>'; }).join('') + '</div>' : '';
+
+  /* where to go next — the collections either side of this one */
+  var idx = -1;
+  COLLECTIONS.forEach(function(x, i){ if(x.slug === slug) idx = i; });
+  var prev = idx > 0 ? COLLECTIONS[idx-1] : COLLECTIONS[COLLECTIONS.length-1];
+  var next = idx > -1 && idx < COLLECTIONS.length-1 ? COLLECTIONS[idx+1] : COLLECTIONS[0];
+  var siblings = (COLLECTIONS.length > 1 && prev && next && prev.slug !== slug)
+    ? '<nav class="colnav">'+
+        '<a class="colnav-a" href="#/collection/'+prev.slug+'">'+
+          '<span class="label">Previous</span><strong>'+esc(prev.name)+'</strong></a>'+
+        '<a class="colnav-a colnav-next" href="#/collection/'+next.slug+'">'+
+          '<span class="label">Next</span><strong>'+esc(next.name)+'</strong></a>'+
+      '</nav>' : '';
+
+  var cover = IMG(c.cover, 2000);
+  var title = esc(c.tagline || c.name);
+  var eyebrow = (c.tagline && c.tagline !== c.name) ? esc(c.name) + ' collection' : 'Collection';
+
+  var head;
+  if(cover){
+    /* the cover photograph carries the page — name and blurb sit over it */
+    head = '<header class="colhero">'+
+      '<div class="colhero-bg"><img src="'+cover+'" alt="'+esc(c.name)+
+        ' collection — bridal and festive couture by Elara Etelier, New Delhi"></div>'+
+      '<div class="colhero-in">'+
+        '<div class="colhero-nav">'+backLink('#/collections','All collections')+'</div>'+
+        '<div class="colhero-say">'+
+          '<div class="label colhero-eyebrow">'+eyebrow+'</div>'+
+          '<h1>'+title+'</h1>'+
+          (c.blurb ? '<p class="colhero-blurb">'+esc(c.blurb)+'</p>' : '')+
+          meta+
+        '</div>'+
+      '</div>'+
+    '</header>';
+  } else {
+    /* no cover yet — the old parchment header, which still reads well */
+    head = '<div class="pagetop"><div class="wrap">'+
       backLink('#/collections','All collections')+'<div class="crumb">'+esc(c.name)+'</div>'+
       '<div class="pagetop-grid">'+
-        '<h1>'+esc(c.tagline || c.name)+'</h1>'+
+        '<h1>'+title+'</h1>'+
         (c.blurb ? '<div class="pagetop-blurb">'+esc(c.blurb)+'</div>' : '')+
-      '</div>'+
-      (items.length ? '<div class="label" style="margin-top:var(--s4)">'+items.length+' piece'+(items.length===1?'':'s')+'</div>' : '')+
-    '</div></div>'+
-    '<section class="band"><div class="wrap">'+ body +
+      '</div>'+ meta +
+    '</div></div>';
+  }
+
+  return head +
+    '<section class="band"><div class="wrap">'+
+      (items.length && live.length ? '<div class="head rev colhead"><h2>The pieces</h2><div class="rule"></div></div>' : '')+
+      body +
       '<div class="textile" style="margin:var(--s7) 0 var(--s5)"></div>'+
       '<div class="btn-row"><a class="btn btn-secondary" href="#/collections">All collections</a>'+
       '<a class="btn btn-primary" target="_blank" rel="noopener" href="'+ask+'">Ask about this collection</a></div>'+
+      siblings +
     '</div></section>';
 }
 
@@ -3495,6 +3548,63 @@ body.adminmode .wa{bottom:76px}
 
 <style>
 /* ---- COLLECTION PAGE: heading beside its blurb, not a long ribbon ---- */
+/* ---- COLLECTION HEADER ---- */
+.colhero{position:relative; min-height:clamp(420px,64svh,680px); display:grid; align-items:end;
+  overflow:hidden; background:var(--wine); isolation:isolate}
+.colhero-bg{position:absolute; inset:0; z-index:0}
+.colhero-bg img{width:100%; height:100%; object-fit:cover; object-position:center 32%;
+  filter:saturate(.82) contrast(1.03);
+  animation:colDrift 1.4s var(--e-drape) both}
+@keyframes colDrift{from{transform:scale(1.06); opacity:0} to{transform:scale(1); opacity:1}}
+.colhero::after{content:""; position:absolute; inset:0; z-index:1; pointer-events:none;
+  background:linear-gradient(180deg, rgba(28,10,12,.52) 0%, rgba(28,10,12,.14) 34%,
+    rgba(28,10,12,.58) 74%, rgba(28,10,12,.86) 100%)}
+.colhero-in{position:relative; z-index:2; width:100%; max-width:1320px; margin:0 auto;
+  padding:calc(var(--s8) + 10px) var(--gutter) clamp(var(--s6),7vh,var(--s7));
+  display:flex; flex-direction:column; justify-content:space-between; min-height:inherit}
+.colhero-nav{margin-bottom:auto}
+.colhero-nav .backlink{color:rgba(255,253,247,.78)}
+.colhero-nav .backlink:hover{color:#fff}
+.colhero-say{max-width:52ch}
+.colhero-eyebrow{color:var(--gold); margin-bottom:var(--s3)}
+.colhero h1{font-family:var(--f-display); font-weight:400; font-size:var(--t-display);
+  line-height:1.03; margin:0 0 var(--s4); color:#FFFDF7; max-width:16ch;
+  text-wrap:balance; text-shadow:0 1px 30px rgba(28,10,12,.34)}
+.colhero-blurb{font-family:var(--f-editorial); font-size:var(--t-lede); line-height:1.66;
+  color:rgba(255,253,247,.9); margin:0; max-width:46ch}
+.colhero-meta{display:flex; flex-wrap:wrap; gap:var(--s2) var(--s4); margin-top:var(--s5);
+  font-family:var(--f-utility); font-size:var(--t-label); letter-spacing:var(--tr-label);
+  text-transform:uppercase; color:rgba(255,253,247,.72)}
+.colhero-meta span{position:relative; padding-right:var(--s4)}
+.colhero-meta span::after{content:""; position:absolute; right:0; top:50%; width:4px; height:4px;
+  border-radius:50%; background:var(--gold); transform:translateY(-50%); opacity:.7}
+.colhero-meta span:last-child{padding-right:0}
+.colhero-meta span:last-child::after{display:none}
+.pagetop .colhero-meta{color:var(--ink-mute); margin-top:var(--s4)}
+.colhead{margin-bottom:var(--s5)}
+
+/* previous / next collection */
+.colnav{display:grid; grid-template-columns:1fr 1fr; gap:var(--s4); margin-top:var(--s7);
+  border-top:1px solid var(--gold-line); padding-top:var(--s5)}
+.colnav-a{display:flex; flex-direction:column; gap:6px; color:var(--ink)}
+.colnav-a .label{color:var(--ink-mute)}
+.colnav-a strong{font-family:var(--f-display); font-weight:400; font-size:1.32rem; line-height:1.2;
+  transition:color var(--d-ui) var(--e-drape)}
+.colnav-a:hover strong{color:var(--wine)}
+.colnav-next{text-align:right; align-items:flex-end}
+
+@media(max-width:760px){
+  .colhero{min-height:clamp(360px,58svh,520px)}
+  .colhero-bg img{object-position:center 28%}
+  .colhero h1{max-width:14ch}
+  .colhero-blurb{font-size:1.02rem; line-height:1.6}
+  .colnav{grid-template-columns:1fr; gap:var(--s4)}
+  .colnav-next{text-align:left; align-items:flex-start}
+}
+@media(prefers-reduced-motion:reduce){
+  .colhero-bg img{animation:none}
+}
+
 .pagetop-grid{display:grid; grid-template-columns:1.05fr .95fr; gap:var(--s5) var(--s7); align-items:start}
 .pagetop-grid h1{margin:var(--s2) 0 0}
 .pagetop-blurb{font-family:var(--f-editorial); font-size:var(--t-lede); line-height:1.7;
