@@ -907,8 +907,8 @@ var PRODUCTS = [
 
 var CRAFT = [
   {n:"01", t:"Thread", pic:"craft1", p:"Silk and zari wound by hand and matched to the cloth before a single stitch is placed."},
-  {n:"02", t:"Fabric", pic:"craft2", p:"Chanderi, organza, raw silk and velvet, chosen by weight and fall rather than by name."},
-  {n:"03", t:"Embroidery", pic:"craft3", p:"Zardozi, aari and beadwork on the frame. Measured in weeks, not hours."},
+  {n:"02", t:"Fabric", pic:"craft2", p:"Chanderi, organza, pure crepe and imported net, chosen by weight and fall rather than by name."},
+  {n:"03", t:"Embroidery", pic:"craft3", p:"Zardozi, aari, pearl work and beadwork on the frame. Measured in weeks, not hours."},
   {n:"04", t:"Construction", pic:"craft4", p:"Cut to one set of measurements, lined and boned where needed, finished inside as carefully as out."},
   {n:"05", t:"Garment", pic:"craft5", p:"Final fitting in the etelier, then pressed, wrapped and handed over."}
 ];
@@ -1083,8 +1083,6 @@ function card(p, ratio){
   var rows = [['Fabric',p.fabric],['Craft',p.craftsmanship],['Silhouette',p.silhouette],['Lead time',p.lead]]
     .filter(function(r){ return r[1]; })
     .map(function(r){ return '<div class="cf-row"><span>'+r[0]+'</span><em>'+esc(r[1])+'</em></div>'; }).join('');
-  var dots = (p.colours||[]).map(function(c){
-    return '<span class="dot" style="background:'+c[1]+'" title="'+esc(c[0])+'"></span>'; }).join('');
   var d = String(p.description||'');
   if(d.length > 132){ d = d.slice(0,132).replace(/\s+\S*$/,'') + '…'; }
   var soonMsg = 'Hello H.K., please tell me when '+p.name+' ('+p.id+') is available.';
@@ -1098,7 +1096,6 @@ function card(p, ratio){
           '<h4>'+esc(p.name)+'</h4>'+
           '<p class="cf-desc">'+esc(d)+'</p>'+
           '<div class="cf-specs">'+rows+'</div>'+
-          (dots ? '<div class="cf-dots">'+dots+'</div>' : '')+
           '<div class="cf-price">'+(p.comingSoon ? esc(p.releaseNote || 'Arriving soon') : esc(money(p.price)))+'</div>'+
           '<div class="cf-actions">'+
             '<a class="btn btn-primary" href="#/product/'+p.slug+'">See the piece</a>'+
@@ -1427,7 +1424,6 @@ function viewProduct(slug){
   var specs = [
     ['Fabric', p.fabric], ['Craftsmanship', p.craftsmanship], ['Silhouette', p.silhouette],
     ['Sizes', p.sizes.join(' · ')],
-    ['Colours', p.colours.map(function(c){ return '<span class="dot" style="background:'+c[1]+'"></span>'+esc(c[0]); }).join('&nbsp;&nbsp; ')],
     ['Customisation', p.customisation ? 'Available — fabric, colour, embroidery and length' : 'Not available on this piece'],
     ['Lead time', p.lead], ['Reference', p.id]
   ].map(function(r){ return '<div class="spec"><dt>'+r[0]+'</dt><dd>'+r[1]+'</dd></div>'; }).join('');
@@ -1782,7 +1778,6 @@ function setProductSchema(seg){
     }
   };
   if(p.fabric) data.material = p.fabric;
-  if(p.colours && p.colours.length) data.color = p.colours.map(function(c){ return c[0]; }).join(', ');
   if(p.sizes && p.sizes.length) data.size = p.sizes.join(', ');
   if(/^https?:/.test(img)) data.image = [img];
   if(p.price != null) data.offers.price = String(p.price);
