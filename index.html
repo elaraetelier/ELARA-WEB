@@ -295,22 +295,42 @@ button{font:inherit}
 .load-star{width:22px; margin:var(--s4) auto 0; opacity:0; transform:scale(.5) rotate(-25deg);
   animation:spark 900ms var(--e-drape) 1650ms forwards}
 @keyframes spark{60%{opacity:1; transform:scale(1.15) rotate(0)} to{opacity:.8; transform:scale(1) rotate(0)}}
+/* shown only when the site's own pages could not be fetched */
+.load-fail{margin-top:var(--s5); animation:fade 500ms var(--e-drape) both}
+.load-fail-rule{width:44px; height:1px; background:var(--gold-line); margin:0 auto var(--s4)}
+.load-fail-msg{font-family:var(--f-editorial); font-size:1.02rem; line-height:1.65;
+  color:var(--ink-mute); margin:0 auto var(--s4); max-width:34ch}
+#loadRetry{cursor:pointer}
+#loader.failed .load-stitch path{animation:none; stroke-dashoffset:0; opacity:.45}
+#loader.failed .load-star{animation:none; opacity:.3}
 
 /* nav */
-.nav{position:fixed; top:0; left:0; right:0; z-index:30; transition:background var(--d-ui) var(--e-drape)}
-.nav-in{display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:var(--s4);
-  max-width:1320px; margin:0 auto; padding:var(--s4) var(--gutter); border-bottom:1px solid transparent; transition:padding var(--d-ui) var(--e-drape)}
+.nav{position:fixed; top:0; left:0; right:0; z-index:30; transition:background var(--d-ui) var(--e-drape);
+  --navh:clamp(58px,7.2vh,82px)}
+/* a whisper of shade at the very top, so the links stay readable over any photograph */
+.nav::before{content:""; position:absolute; inset:0 0 auto; height:calc(var(--navh) + 40px);
+  background:linear-gradient(180deg,rgba(24,8,10,.45),transparent); pointer-events:none;
+  opacity:1; transition:opacity var(--d-ui) var(--e-drape)}
+.nav.stuck::before,.nav.solid::before{opacity:0}
+.nav-in{position:relative; z-index:1; display:grid; grid-template-columns:1fr auto 1fr;
+  align-items:center; gap:var(--s4); min-height:var(--navh);
+  max-width:1320px; margin:0 auto; padding:var(--s3) var(--gutter);
+  border-bottom:1px solid transparent; transition:padding var(--d-ui) var(--e-drape)}
 .nav.stuck{background:rgba(228,225,211,.96); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px)}
 .nav.stuck .nav-in{border-bottom-color:var(--wine-line); padding-block:var(--s3)}
-.navlinks{display:flex; gap:var(--s5); list-style:none; margin:0; padding:0}
+.navlinks{display:flex; gap:clamp(var(--s3),2.2vw,var(--s5)); list-style:none; margin:0; padding:0;
+  min-width:0; flex-wrap:nowrap}
+.navlinks a{white-space:nowrap}
 .navlinks a{font-family:var(--f-utility); font-weight:400; font-size:.76rem; letter-spacing:var(--tr-nav);
   text-transform:uppercase; color:var(--on-wine); position:relative; padding-bottom:6px; transition:color var(--d-ui) var(--e-drape)}
 .navlinks a::after{content:""; position:absolute; left:0; right:100%; bottom:0; height:1px;
   background-image:linear-gradient(90deg,currentColor 0 5px,transparent 5px 9px); background-size:9px 1px;
   transition:right 380ms var(--e-drape)}
 .navlinks a:hover::after,.navlinks a.on::after{right:0}
-.navmark{font-family:var(--f-display); font-size:1rem; letter-spacing:.2em; color:var(--on-wine); white-space:nowrap; transition:color var(--d-ui) var(--e-drape)}
-.navutil{justify-self:end; display:flex; align-items:center; gap:var(--s3)}
+.navmark{font-family:var(--f-display); font-size:clamp(.82rem,1.1vw,1rem); letter-spacing:.18em;
+  color:var(--on-wine); white-space:nowrap; justify-self:center;
+  transition:color var(--d-ui) var(--e-drape)}
+.navutil{justify-self:end; display:flex; align-items:center; gap:var(--s3); min-width:0}
 .nav.stuck .navlinks a,.nav.stuck .navmark,.nav.solid .navlinks a,.nav.solid .navmark{color:var(--ink)}
 .nav.stuck .btn-light,.nav.solid .btn-light{color:var(--wine); border-color:var(--wine-line)}
 .nav.stuck .btn-light:hover,.nav.solid .btn-light:hover{background:var(--wine-veil); border-color:var(--wine)}
@@ -328,7 +348,10 @@ button{font:inherit}
 .sheet.open a:nth-child(2){transition-delay:80ms}.sheet.open a:nth-child(3){transition-delay:160ms}
 .sheet.open a:nth-child(4){transition-delay:240ms}.sheet.open a:nth-child(5){transition-delay:320ms}
 .sheet.open a:nth-child(6){transition-delay:400ms}
-@media(max-width:900px){.nav-in{grid-template-columns:1fr auto}.navlinks,.navutil .btn{display:none}.burger{display:block; justify-self:end}}
+@media(max-width:1000px){.nav-in{grid-template-columns:1fr auto}
+  .navlinks,.navutil .btn{display:none}
+  .navmark{justify-self:start; font-size:.92rem}
+  .burger{display:block; justify-self:end}}
 
 /* product cards */
 .card-media{position:relative; overflow:hidden}
@@ -370,12 +393,17 @@ footer{background:var(--parchment); padding-block:var(--s7) var(--s5)}
 
 <style>
 /* ---- HOME ---- */
-.hero{position:relative; min-height:100svh; display:grid; align-items:end; overflow:hidden; background:var(--wine)}
+.hero{position:relative; min-height:100svh; display:grid; align-items:end; overflow:hidden;
+  background:var(--wine); --navh:clamp(58px,7.2vh,82px)}
 .hero-bg{position:absolute; inset:-6% 0; will-change:transform}
 .hero-bg img{width:100%; height:100%; object-fit:cover; filter:saturate(.8) contrast(1.04)}
 .hero::after{content:""; position:absolute; inset:0;
   background:linear-gradient(180deg,rgba(24,8,10,.62) 0%,rgba(24,8,10,.18) 40%,rgba(24,8,10,.82) 100%)}
-.hero-in{position:relative; z-index:2; width:100%; max-width:1320px; margin:0 auto; padding:0 var(--gutter) clamp(var(--s6),9vh,var(--s7))}
+/* The top padding is what keeps the eyebrow clear of the fixed nav. Without it,
+   a short window makes the hero content taller than the hero itself and the first
+   line rides up underneath the links. */
+.hero-in{position:relative; z-index:2; width:100%; max-width:1320px; margin:0 auto;
+  padding:calc(var(--navh) + var(--s5)) var(--gutter) clamp(var(--s6),9vh,var(--s7))}
 .hero h1{font-family:var(--f-display); font-weight:400; font-size:var(--t-hero); line-height:.95;
   letter-spacing:-.02em; color:#FFFDF7; margin:0; max-width:14ch; text-shadow:0 1px 30px rgba(20,6,8,.45)}
 .hero h1 em{font-family:var(--f-editorial); font-style:italic}
@@ -480,6 +508,13 @@ footer{background:var(--parchment); padding-block:var(--s7) var(--s5)}
     <div class="load-word">ELARA ETELIER</div>
     <div class="load-sub">BY H.K</div>
     <svg class="load-star" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0 L13.6 10.4 L24 12 L13.6 13.6 L12 24 L10.4 13.6 L0 12 L10.4 10.4 Z" fill="#A98B58"/></svg>
+
+    <div class="load-fail" id="loadFail" hidden>
+      <div class="load-fail-rule"></div>
+      <p class="load-fail-msg" id="loadFailMsg">We could not reach the etelier just now.
+        Check your connection and try again.</p>
+      <button class="btn btn-primary" id="loadRetry" type="button">Try again</button>
+    </div>
   </div>
 </div>
 
@@ -973,7 +1008,13 @@ function applySettings(d){
   var fp = document.getElementById('footPhone'); if(fp) fp.textContent = CONFIG.whatsappLabel;
   var fb = document.getElementById('footBlurb'); if(fb) fb.textContent = T('footerBlurb');
 }
+/* Until the first paint the page is still behind the loader, so there is nothing
+   to repaint — the incoming data simply replaces the globals and is picked up by
+   that first render. Repainting before then is what made the built-in samples
+   flash up and then get swapped out on a cold visit. */
+var BOOTED = false;
 function repaint(){
+  if(!BOOTED) return;
   if(window.__render) window.__render();
   if(window.__syncWA) window.__syncWA();
   if(window.__paintFooter) window.__paintFooter();
@@ -1020,23 +1061,26 @@ function refreshCatalog(){
     repaint();
   }).catch(function(e){ console.warn('Elara: catalogue refresh failed', e); });
 }
+/* Every read below must succeed before anything is drawn. The samples in this
+   file exist only so the page has something to fall back on while it is being
+   built; a visitor must never see them, so a failure holds the loader and asks
+   for a retry instead of quietly opening the wrong site. */
 function loadSite(){
-  if(!FB_READY) return;
-  db.collection(C_SITE).doc('settings').get().then(function(s){
-    if(s.exists){ LIVE.settings = true; applySettings(s.data()); repaint(); }
-  }).catch(function(){});
+  if(!FB_READY) return Promise.reject(new Error(FB_WHY || 'Not connected to Firestore'));
 
-  db.collection(C_COL).orderBy('sort','asc').get().then(function(qs){
-    if(qs.empty) return;
+  var settings = db.collection(C_SITE).doc('settings').get().then(function(s){
+    if(s.exists) applySettings(s.data());
+    LIVE.settings = true; repaint();
+  });
+
+  var cols = db.collection(C_COL).orderBy('sort','asc').get().then(function(qs){
     var arr = [];
     qs.forEach(function(d){ var c = d.data(); c.docId = d.id; arr.push(c); });
-    COLLECTIONS = arr; LIVE.collections = true; repaint();
-  }).catch(function(){});
+    COLLECTIONS = arr;          /* an empty result is the truth, and replaces the seed */
+    LIVE.collections = true; repaint();
+  });
 
-  loadPics();
-
-  db.collection(C_CAT).orderBy('sort','desc').get().then(function(qs){
-    if(qs.empty) return;
+  var cat = db.collection(C_CAT).orderBy('sort','desc').get().then(function(qs){
     var arr = [];
     qs.forEach(function(d){
       var p = d.data(); p.docId = d.id;
@@ -1045,10 +1089,23 @@ function loadSite(){
       if(!p.thumbnail) p.thumbnail = p.images[0] || '';
       arr.push(p);
     });
-    PRODUCTS = arr; LIVE.catalog = true; repaint();
-  }).catch(function(){});
+    PRODUCTS = arr;
+    LIVE.catalog = true; repaint();
+  });
+
+  /* Photographs are heavy and not worth blocking the page for. If they are slow
+     they simply arrive afterwards and the page repaints. */
+  var pics = Promise.race([
+    loadPics().catch(function(){}),
+    new Promise(function(r){ setTimeout(r, 4000); })
+  ]);
+
+  return Promise.all([settings, cols, cat, pics]);
 }
-loadSite();
+
+/* Kept as a function so the retry button can run it again. */
+window.__loadSite = loadSite;
+window.__dataReady = loadSite();
 </script>
 
 <script>
@@ -1983,12 +2040,74 @@ document.addEventListener('click', function(e){
   if(navDepth > 0 && history.length > 1){ e.preventDefault(); navDepth--; history.back(); }
   /* otherwise the href takes over, so a link opened cold still goes somewhere sensible */
 });
-render();
-var loader = document.getElementById('loader');
-setTimeout(function(){
-  loader.classList.add('done');
-  setTimeout(function(){ loader.remove(); }, 800);
-}, reduce ? 200 : 2600);
+var loader    = document.getElementById('loader');
+var MIN_HOLD  = reduce ? 200 : 1500;   /* long enough not to flicker */
+var SLOW_AT   = 12000;                 /* when to admit it is not working */
+var startedAt = Date.now();
+var slowTimer = null;
+
+function firstPaint(){
+  if(BOOTED) return;
+  BOOTED = true;
+  clearTimeout(slowTimer);
+  render();
+  if(window.__syncWA) window.__syncWA();
+  if(window.__paintFooter) window.__paintFooter();
+  var waited = Date.now() - startedAt;
+  setTimeout(function(){
+    if(!loader) return;
+    loader.classList.add('done');
+    setTimeout(function(){ if(loader) loader.remove(); }, 800);
+  }, Math.max(0, MIN_HOLD - waited));
+}
+
+/* The loader stays. Nothing is drawn until the etelier's own pages arrive. */
+function showRetry(err){
+  if(BOOTED || !loader) return;
+  clearTimeout(slowTimer);
+  var offline = (typeof navigator !== 'undefined' && navigator.onLine === false);
+  var box = document.getElementById('loadFail');
+  var msg = document.getElementById('loadFailMsg');
+  if(!box) return;
+  msg.textContent = offline
+    ? 'You appear to be offline. Check your connection and try again.'
+    : 'We could not reach the etelier just now. Check your connection and try again.';
+  loader.classList.add('failed');
+  box.hidden = false;
+  if(err) console.warn('Elara: the site data did not load \u2014', err);
+}
+
+function attempt(pr){
+  clearTimeout(slowTimer);
+  slowTimer = setTimeout(function(){ showRetry(new Error('timed out')); }, SLOW_AT);
+  pr.then(firstPaint, showRetry);
+}
+
+var retryBtn = document.getElementById('loadRetry');
+if(retryBtn) retryBtn.addEventListener('click', function(){
+  var box = document.getElementById('loadFail');
+  if(box) box.hidden = true;
+  loader.classList.remove('failed');
+  startedAt = Date.now();
+  attempt(window.__loadSite());
+});
+
+/* if the connection comes back on its own, try again without being asked */
+window.addEventListener('online', function(){
+  if(BOOTED) return;
+  var box = document.getElementById('loadFail');
+  if(box && !box.hidden){
+    box.hidden = true; loader.classList.remove('failed');
+    startedAt = Date.now();
+    attempt(window.__loadSite());
+  }
+});
+
+if(window.__dataReady && window.__dataReady.then){
+  attempt(window.__dataReady);
+} else {
+  showRetry(new Error('Firestore is not available'));
+}
 })();
 </script>
 
@@ -3479,13 +3598,13 @@ return { mount:mount, clear:clear };
 
   /* hero */
   .hero h1{max-width:none; letter-spacing:0}
-  .hero-in{padding-bottom:var(--s6)}
+  .hero-in{padding-top:calc(var(--navh) + var(--s4)); padding-bottom:var(--s6)}
   .hero-foot{gap:var(--s4)}
   .hero-foot p{max-width:none}
   .scroll-cue i{width:40px}
 
   /* nav sits tighter, and the sheet fills properly */
-  .nav-in{padding:14px var(--gutter)}
+  .nav-in{padding:12px var(--gutter)}
   .navmark{font-size:.82rem; letter-spacing:.16em}
   .sheet{align-content:center; gap:var(--s3)}
   .sheet a{font-size:clamp(1.7rem,9vw,2.4rem)}
